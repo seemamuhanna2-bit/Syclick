@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -82,7 +83,7 @@
     </div>
 
     <div class="click-area">
-        <button class="click-btn" id="clickBtn">💰</button>
+        <button class="click-btn" id="clickBtn">💎</button>
     </div>
 
     <div class="actions">
@@ -108,23 +109,26 @@
             localStorage.setItem('syclick_score', score);
         });
 
-        // ربط الإعلان مع فحص وتنبيه مباشر
-        const adController = window.Adsgram ? window.Adsgram.init({ blockId: "52772", debug: true }) : null;
-
+        // زر مشاهدة الإعلان
         adBtn.addEventListener('click', () => {
-            if (!window.Adsgram || !adController) {
-                alert("لم يتم تحميل مكتبة الإعلانات بعد. تأكدي من الاتصال بالإنترنت أو تفعيل VPN");
+            if (typeof window.Adsgram === 'undefined') {
+                alert("تعذر تحميل سكريبت الإعلانات، تحققي من اتصال الـ VPN ثم أعد تشغيل التطبيق.");
                 return;
             }
 
-            adController.show().then((result) => {
-                score += 5000;
-                scoreElement.textContent = score.toLocaleString();
-                localStorage.setItem('syclick_score', score);
-                alert("مبروك! تمت إضافة 5000 نقطة إلى رصيدك.");
-            }).catch((err) => {
-                alert("تعذر عرض الإعلان: " + JSON.stringify(err));
-            });
+            try {
+                const adController = window.Adsgram.init({ blockId: "52772", debug: true });
+                adController.show().then((result) => {
+                    score += 5000;
+                    scoreElement.textContent = score.toLocaleString();
+                    localStorage.setItem('syclick_score', score);
+                    alert("مبروك! تمت إضافة 5000 نقطة إلى رصيدك.");
+                }).catch((err) => {
+                    alert("رد خادم الإعلانات: " + JSON.stringify(err));
+                });
+            } catch (e) {
+                alert("خطأ برمجي داخلي: " + e.message);
+            }
         });
     </script>
 </body>
