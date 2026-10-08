@@ -144,6 +144,21 @@
       alert("سيتم تفعيل عرض الإعلانات بمجرد إكمال الربط مع AdsGram!");
     });
   </script>
+<!-- استدعاء مكتبة AdsGram -->
+<script src="https://sad.adsgram.ai/js/sad.js"></script>
+<script>
+    // ربط معرف الإعلان الخاص بك
+    const adController = window.Adsgram.init({ blockId: "52772" });
+    
+    // دالة تشغيل الإعلان
+    function showRewardAd() {
+        adController.show().then(() => {
+            alert("تمت مشاهدة الإعلان بنجاح!");
+        }).catch(() => {
+            alert("لم تكتمل المشاهدة");
+        });
+    }
+</script>
 
 </body>
 </html>
