@@ -1,12 +1,10 @@
-
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sy Click</title>
-    <!-- استدعاء تيليجرام ومكتبة AdsGram بالاسم الرسمي المحدث -->
+    <!-- استدعاء تيليجرام ومكتبة Adsgram -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
     <style>
@@ -14,82 +12,230 @@
             box-sizing: border-box;
             user-select: none;
             -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
         }
         body {
-            margin: 0;
-            padding: 20px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(180deg, #131722 0%, #0d0f17 100%);
+            background-color: #121820;
             color: #ffffff;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            min-height: 100vh;
+            height: 100vh;
+            overflow: hidden;
         }
         .header {
+            padding: 16px;
             text-align: center;
-            margin-top: 20px;
+            background: #1a222d;
+            border-bottom: 1px solid #2a3544;
         }
-        .score-box {
-            font-size: 40px;
-            font-weight: bold;
-            color: #f3ba2f;
-            margin: 15px 0;
+        .app-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #38a5e0;
         }
-        .click-area {
+        .score-container {
+            margin-top: 8px;
             display: flex;
-            justify-content: center;
             align-items: center;
-            margin: auto 0;
+            justify-content: center;
+            gap: 8px;
         }
-        .click-btn {
+        .score-val {
+            font-size: 32px;
+            font-weight: 800;
+            color: #f5b300;
+        }
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+        .tab-view {
+            display: none;
+            height: 100%;
+            flex-direction: column;
+        }
+        .tab-view.active {
+            display: flex;
+        }
+        /* واجهة اللعب النقر */
+        .tap-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+        .coin-btn {
             background: none;
             border: none;
-            font-size: 85px;
+            font-size: 110px;
             cursor: pointer;
-            transition: transform 0.1s ease;
+            transition: transform 0.08s ease;
+            outline: none;
         }
-        .click-btn:active {
+        .coin-btn:active {
             transform: scale(0.92);
         }
-        .actions {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            margin-bottom: 30px;
-        }
-        .btn-ad {
-            background-color: #2481cc;
+        .ad-btn {
+            background: linear-gradient(135deg, #2481cc, #1a5ea0);
             color: white;
             border: none;
-            padding: 15px 30px;
-            font-size: 18px;
-            font-weight: bold;
+            padding: 14px 20px;
+            font-size: 16px;
+            font-weight: 600;
             border-radius: 12px;
             cursor: pointer;
             width: 100%;
             max-width: 320px;
-            box-shadow: 0 4px 12px rgba(36, 129, 204, 0.4);
+            box-shadow: 0 4px 14px rgba(36, 129, 204, 0.35);
         }
-        .btn-ad:active {
+        .ad-btn:active {
             transform: scale(0.98);
+        }
+        /* واجهة المهام */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .task-item {
+            background: #1a222d;
+            border: 1px solid #2a3544;
+            padding: 14px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .task-info h4 {
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+        .task-reward {
+            font-size: 13px;
+            color: #f5b300;
+            font-weight: 600;
+        }
+        .task-btn {
+            background: #2a3544;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .task-btn.done {
+            background: #27ae60;
+        }
+        /* واجهة المحفظة */
+        .wallet-card {
+            background: #1a222d;
+            border: 1px solid #2a3544;
+            border-radius: 14px;
+            padding: 18px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .wallet-card p {
+            color: #9ba5b3;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        /* شريط التنقل السفلي */
+        .bottom-nav {
+            display: flex;
+            background: #161c24;
+            border-top: 1px solid #2a3544;
+            padding: 8px 0 16px 0;
+        }
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            padding: 6px;
+            font-size: 12px;
+            color: #7b8898;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+        .nav-item.active {
+            color: #38a5e0;
+            font-weight: 700;
+        }
+        .nav-item span {
+            display: block;
+            font-size: 20px;
+            margin-bottom: 2px;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h2>Sy Click</h2>
-        <div class="score-box" id="score">0</div>
+        <div class="app-title">Sy Click</div>
+        <div class="score-container">
+            <span class="score-val" id="score">0</span>
+            <span style="font-size: 20px;">🪙</span>
+        </div>
     </div>
 
-    <div class="click-area">
-        <button class="click-btn" id="clickBtn">💸</button>
+    <div class="main-content">
+        <!-- صفحة النقر الرئيسية -->
+        <div class="tab-view active" id="tab-game">
+            <div class="tap-area">
+                <button class="coin-btn" id="clickBtn">🪙</button>
+                <button class="ad-btn" id="adBtn">🎬 مكافأة إعلان (+5000 نقطة)</button>
+            </div>
+        </div>
+
+        <!-- صفحة المهام -->
+        <div class="tab-view" id="tab-tasks">
+            <div class="task-list">
+                <div class="task-item">
+                    <div class="task-info">
+                        <h4>انضم لقناتنا الرسمية</h4>
+                        <span class="task-reward">+2,500 نقطة</span>
+                    </div>
+                    <button class="task-btn" onclick="completeTask(this, 2500, 'https://t.me/telegram')">تنفيذ</button>
+                </div>
+                <div class="task-item">
+                    <div class="task-info">
+                        <h4>مشاركة البوت مع الأصدقاء</h4>
+                        <span class="task-reward">+5,000 نقطة</span>
+                    </div>
+                    <button class="task-btn" onclick="completeTask(this, 5000, 'share')">مشاركة</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- صفحة المحفظة / السحب -->
+        <div class="tab-view" id="tab-wallet">
+            <div class="wallet-card">
+                <h3 style="margin-bottom: 8px; color: #fff;">سحب الأرباح</h3>
+                <p>يتم تجميع النقاط واستبدالها برصيد أو مكافآت دورية بناءً على المتصدرين.</p>
+                <div style="margin-top: 15px; font-weight: bold; color: #38a5e0;">
+                    الحد الأدنى لطلب السحب: 100,000 نقطة
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="actions">
-        <button class="btn-ad" id="adBtn">
-            <span>🎬 مشاهدة إعلان (+5000 نقطة)</span>
+    <!-- الشريط السفلي -->
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('tab-game', this)">
+            <span>🎮</span>الرئيسية
+        </button>
+        <button class="nav-item" onclick="switchTab('tab-tasks', this)">
+            <span>📋</span>المهام
+        </button>
+        <button class="nav-item" onclick="switchTab('tab-wallet', this)">
+            <span>💼</span>السحب
         </button>
     </div>
 
@@ -110,27 +256,51 @@
             localStorage.setItem('syclick_score', score);
         });
 
-        // زر مشاهدة الإعلان
+        // زر الإعلانات
         adBtn.addEventListener('click', () => {
             if (typeof window.Adsgram === 'undefined') {
-                alert("لم يتم تحميل المكتبة بعد، يرجى الانتظار ثوانٍ أو إعادة فتح التطبيق.");
+                alert("جاري تجهيز الاتصال، يرجى المحاولة بعد ثوانٍ.");
                 return;
             }
-
             try {
+                // blockId = "52772" (أو "int-test" للاختبار)
                 const adController = window.Adsgram.init({ blockId: "52772", debug: true });
                 adController.show().then((result) => {
                     score += 5000;
                     scoreElement.textContent = score.toLocaleString();
                     localStorage.setItem('syclick_score', score);
-                    alert("مبروك! تمت إضافة 5000 نقطة إلى رصيدك.");
+                    alert("مبروك! تمت إضافة 5000 نقطة.");
                 }).catch((err) => {
-                    alert("رد الشبكة: " + JSON.stringify(err));
+                    alert("حالة الوحدة: " + (err.description || JSON.stringify(err)));
                 });
             } catch (e) {
                 alert("خطأ: " + e.message);
             }
         });
+
+        // التنقل بين التبويبات
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.tab-view').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            el.classList.add('active');
+        }
+
+        // إتمام المهام
+        function completeTask(btn, reward, action) {
+            if (btn.classList.contains('done')) return;
+            if (action === 'share') {
+                if (tg) tg.openTelegramLink('https://t.me/share/url?url=https://t.me/Syclick_bot&text=جرب%20تطبيق%20Sy%20Click');
+            } else {
+                if (tg) tg.openLink(action);
+            }
+            score += reward;
+            scoreElement.textContent = score.toLocaleString();
+            localStorage.setItem('syclick_score', score);
+            btn.textContent = "تم ✓";
+            btn.classList.add('done');
+        }
     </script>
 </body>
 </html>
+
