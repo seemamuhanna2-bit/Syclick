@@ -5,9 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sy Click</title>
-    <!-- استدعاء تيليجرام ومكتبة AdsGram -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://sad.adsgram.ai/js/sad.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -83,7 +81,7 @@
     </div>
 
     <div class="click-area">
-        <button class="click-btn" id="clickBtn">💎</button>
+        <button class="click-btn" id="clickBtn">🪙</button>
     </div>
 
     <div class="actions">
@@ -109,27 +107,42 @@
             localStorage.setItem('syclick_score', score);
         });
 
-        // زر مشاهدة الإعلان
-        adBtn.addEventListener('click', () => {
-            if (typeof window.Adsgram === 'undefined') {
-                alert("تعذر تحميل سكريبت الإعلانات، تحققي من اتصال الـ VPN ثم أعد تشغيل التطبيق.");
-                return;
-            }
+        // دالة لتحميل السكريبت برمجياً عند الطلب
+        function loadAdsgramScript() {
+            return new Promise((resolve, reject) => {
+                if (window.Adsgram) {
+                    resolve();
+                    return;
+                }
+                const script = document.createElement('script');
+                script.src = 'https://sad.adsgram.ai/js/sad.js';
+                script.onload = () => resolve();
+                script.onerror = () => reject(new Error('فشل جلب الملف من خوادم AdsGram'));
+                document.head.appendChild(script);
+            });
+        }
+
+        adBtn.addEventListener('click', async () => {
+            adBtn.disabled = true;
+            adBtn.innerText = "جاري الاتصال...";
 
             try {
+                await loadAdsgramScript();
                 const adController = window.Adsgram.init({ blockId: "52772", debug: true });
-                adController.show().then((result) => {
-                    score += 5000;
-                    scoreElement.textContent = score.toLocaleString();
-                    localStorage.setItem('syclick_score', score);
-                    alert("مبروك! تمت إضافة 5000 نقطة إلى رصيدك.");
-                }).catch((err) => {
-                    alert("رد خادم الإعلانات: " + JSON.stringify(err));
-                });
-            } catch (e) {
-                alert("خطأ برمجي داخلي: " + e.message);
+                const result = await adController.show();
+                
+                score += 5000;
+                scoreElement.textContent = score.toLocaleString();
+                localStorage.setItem('syclick_score', score);
+                alert("مبروك! تمت إضافة 5000 نقطة إلى رصيدك.");
+            } catch (err) {
+                alert("نتيجة الطلب: " + (err.description || err.message || JSON.stringify(err)));
+            } finally {
+                adBtn.disabled = false;
+                adBtn.innerText = "🎬 مشاهدة إعلان (+5000 نقطة)";
             }
         });
     </script>
 </body>
 </html>
+
