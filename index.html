@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sy Click</title>
-    <!-- استدعاء تيليجرام ومكتبة Adsgram -->
+    <!-- استدعاء سكريبت تيليجرام ومكتبة Adsgram -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
     <style>
@@ -62,25 +62,25 @@
         .tab-view.active {
             display: flex;
         }
-        /* واجهة اللعب النقر */
+        /* واجهة النقر */
         .tap-area {
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 20px;
+            gap: 24px;
         }
-        .coin-btn {
+        .bag-btn {
             background: none;
             border: none;
-            font-size: 110px;
+            font-size: 115px;
             cursor: pointer;
             transition: transform 0.08s ease;
             outline: none;
         }
-        .coin-btn:active {
-            transform: scale(0.92);
+        .bag-btn:active {
+            transform: scale(0.90);
         }
         .ad-btn {
             background: linear-gradient(135deg, #2481cc, #1a5ea0);
@@ -130,11 +130,15 @@
             border-radius: 8px;
             font-size: 13px;
             cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s ease, opacity 0.2s ease;
         }
         .task-btn.done {
-            background: #27ae60;
+            background: #27ae60 !important;
+            opacity: 0.6 !important;
+            cursor: default !important;
         }
-        /* واجهة المحفظة */
+        /* واجهة السحب */
         .wallet-card {
             background: #1a222d;
             border: 1px solid #2a3544;
@@ -181,15 +185,15 @@
         <div class="app-title">Sy Click</div>
         <div class="score-container">
             <span class="score-val" id="score">0</span>
-            <span style="font-size: 20px;">🪙</span>
+            <span style="font-size: 24px;">💰</span>
         </div>
     </div>
 
     <div class="main-content">
-        <!-- صفحة النقر الرئيسية -->
+        <!-- الصفحة الرئيسية -->
         <div class="tab-view active" id="tab-game">
             <div class="tap-area">
-                <button class="coin-btn" id="clickBtn">🪙</button>
+                <button class="bag-btn" id="clickBtn">💰</button>
                 <button class="ad-btn" id="adBtn">🎬 مكافأة إعلان (+5000 نقطة)</button>
             </div>
         </div>
@@ -197,28 +201,31 @@
         <!-- صفحة المهام -->
         <div class="tab-view" id="tab-tasks">
             <div class="task-list">
+                <!-- مهمة القناة الرسمية -->
                 <div class="task-item">
                     <div class="task-info">
-                        <h4>انضم لقناتنا الرسمية</h4>
+                        <h4>انضم لقناة التطبيق الرسمية</h4>
                         <span class="task-reward">+2,500 نقطة</span>
                     </div>
-                    <button class="task-btn" onclick="completeTask(this, 2500, 'https://t.me/telegram')">تنفيذ</button>
+                    <button id="task_channel" class="task-btn" onclick="executeChannelTask(this)">انضمام</button>
                 </div>
+
+                <!-- مهمة دعوة 5 أصدقاء -->
                 <div class="task-item">
                     <div class="task-info">
-                        <h4>مشاركة البوت مع الأصدقاء</h4>
-                        <span class="task-reward">+5,000 نقطة</span>
+                        <h4>دعوة 5 أصدقاء للبوت</h4>
+                        <span class="task-reward">+10,000 نقطة</span>
                     </div>
-                    <button class="task-btn" onclick="completeTask(this, 5000, 'share')">مشاركة</button>
+                    <button id="task_invite" class="task-btn" onclick="executeInviteTask(this)">دعوة (0/5)</button>
                 </div>
             </div>
         </div>
 
-        <!-- صفحة المحفظة / السحب -->
+        <!-- صفحة السحب -->
         <div class="tab-view" id="tab-wallet">
             <div class="wallet-card">
                 <h3 style="margin-bottom: 8px; color: #fff;">سحب الأرباح</h3>
-                <p>يتم تجميع النقاط واستبدالها برصيد أو مكافآت دورية بناءً على المتصدرين.</p>
+                <p>يتم احتساب المكافآت وسحب الرصيد (سيرياتيل كاش / كاش) بناءً على إنجاز المهام والمشاهدات المؤكدة.</p>
                 <div style="margin-top: 15px; font-weight: bold; color: #38a5e0;">
                     الحد الأدنى لطلب السحب: 100,000 نقطة
                 </div>
@@ -226,7 +233,7 @@
         </div>
     </div>
 
-    <!-- الشريط السفلي -->
+    <!-- شريط التنقل السفلي -->
     <div class="bottom-nav">
         <button class="nav-item active" onclick="switchTab('tab-game', this)">
             <span>🎮</span>الرئيسية
@@ -243,6 +250,7 @@
         const tg = window.Telegram?.WebApp;
         if (tg) tg.expand();
 
+        // قراءة النقاط الحالية
         let score = parseInt(localStorage.getItem('syclick_score') || '0', 10);
         const scoreElement = document.getElementById('score');
         const clickBtn = document.getElementById('clickBtn');
@@ -250,26 +258,26 @@
 
         scoreElement.textContent = score.toLocaleString();
 
+        // النقر على كيس النقود
         clickBtn.addEventListener('click', () => {
             score += 1;
             scoreElement.textContent = score.toLocaleString();
             localStorage.setItem('syclick_score', score);
         });
 
-        // زر الإعلانات
+        // زر مشاهدة الإعلان
         adBtn.addEventListener('click', () => {
             if (typeof window.Adsgram === 'undefined') {
-                alert("جاري تجهيز الاتصال، يرجى المحاولة بعد ثوانٍ.");
+                alert("جاري الاتصال، يرجى المحاولة بعد لحظات.");
                 return;
             }
             try {
-                // blockId = "52772" (أو "int-test" للاختبار)
                 const adController = window.Adsgram.init({ blockId: "52772", debug: true });
                 adController.show().then((result) => {
                     score += 5000;
                     scoreElement.textContent = score.toLocaleString();
                     localStorage.setItem('syclick_score', score);
-                    alert("مبروك! تمت إضافة 5000 نقطة.");
+                    alert("مبروك! تمت إضافة 5000 نقطة لمشاهدة الإعلان.");
                 }).catch((err) => {
                     alert("حالة الوحدة: " + (err.description || JSON.stringify(err)));
                 });
@@ -278,7 +286,7 @@
             }
         });
 
-        // التنقل بين التبويبات
+        // التبديل بين الواجهات
         function switchTab(tabId, el) {
             document.querySelectorAll('.tab-view').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
@@ -286,21 +294,92 @@
             el.classList.add('active');
         }
 
-        // إتمام المهام
-        function completeTask(btn, reward, action) {
-            if (btn.classList.contains('done')) return;
-            if (action === 'share') {
-                if (tg) tg.openTelegramLink('https://t.me/share/url?url=https://t.me/Syclick_bot&text=جرب%20تطبيق%20Sy%20Click');
-            } else {
-                if (tg) tg.openLink(action);
+        // سجل المهام المحفوظة
+        const completedTasks = JSON.parse(localStorage.getItem('syclick_completed_tasks') || '[]');
+        let inviteCount = parseInt(localStorage.getItem('syclick_invites') || '0', 10);
+
+        function initTasks() {
+            // تثبيت حالة القناة إذا أُنجزت مسبقاً
+            if (completedTasks.includes('task_channel')) {
+                const btn = document.getElementById('task_channel');
+                if (btn) {
+                    btn.textContent = "تم الانضمام ✓";
+                    btn.classList.add('done');
+                    btn.disabled = true;
+                }
             }
-            score += reward;
+
+            // تثبيت حالة الدعوة
+            const inviteBtn = document.getElementById('task_invite');
+            if (completedTasks.includes('task_invite')) {
+                if (inviteBtn) {
+                    inviteBtn.textContent = "تم الإنجاز ✓";
+                    inviteBtn.classList.add('done');
+                    inviteBtn.disabled = true;
+                }
+            } else if (inviteBtn) {
+                inviteBtn.textContent = `دعوة (${inviteCount}/5)`;
+            }
+        }
+        initTasks();
+
+        // مهمة القناة الرسمية
+        function executeChannelTask(btn) {
+            if (completedTasks.includes('task_channel')) return;
+
+            // فتح رابط قناتك الرسمية
+            if (tg) {
+                tg.openTelegramLink('https://t.me/Syclickchannel');
+            } else {
+                window.open('https://t.me/Syclickchannel', '_blank');
+            }
+
+            completedTasks.push('task_channel');
+            localStorage.setItem('syclick_completed_tasks', JSON.stringify(completedTasks));
+
+            score += 2500;
             scoreElement.textContent = score.toLocaleString();
             localStorage.setItem('syclick_score', score);
-            btn.textContent = "تم ✓";
+
+            btn.textContent = "تم الانضمام ✓";
             btn.classList.add('done');
+            btn.disabled = true;
+        }
+
+        // مهمة دعوة 5 أصدقاء
+        function executeInviteTask(btn) {
+            if (completedTasks.includes('task_invite')) return;
+
+            // فتح نافذة مشاركة الرابط عبر تيليجرام
+            const shareUrl = 'https://t.me/share/url?url=https://t.me/Syclick_bot&text=انضم%20إلى%20تطبيق%20Sy%20Click%20واجمع%20النقاط%20والمكافآت%20اليومية!%20💰';
+            if (tg) {
+                tg.openTelegramLink(shareUrl);
+            } else {
+                window.open(shareUrl, '_blank');
+            }
+
+            // زيادة العداد تدريجياً
+            if (inviteCount < 5) {
+                inviteCount += 1;
+                localStorage.setItem('syclick_invites', inviteCount);
+                btn.textContent = `دعوة (${inviteCount}/5)`;
+            }
+
+            // التحقق من اكتمال الشرط (5/5)
+            if (inviteCount >= 5) {
+                completedTasks.push('task_invite');
+                localStorage.setItem('syclick_completed_tasks', JSON.stringify(completedTasks));
+
+                score += 10000;
+                scoreElement.textContent = score.toLocaleString();
+                localStorage.setItem('syclick_score', score);
+
+                btn.textContent = "تم الإنجاز ✓";
+                btn.classList.add('done');
+                btn.disabled = true;
+                alert("أحسنت! تمت إضافة 10,000 نقطة لإتمام دعوة 5 أصدقاء.");
+            }
         }
     </script>
 </body>
 </html>
-
