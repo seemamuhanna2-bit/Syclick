@@ -44,7 +44,7 @@
         .click-btn {
             background: none;
             border: none;
-            font-size: 80px;
+            font-size: 85px;
             cursor: pointer;
             transition: transform 0.1s ease;
         }
@@ -82,7 +82,7 @@
     </div>
 
     <div class="click-area">
-        <button class="click-btn" id="clickBtn">🪙</button>
+        <button class="click-btn" id="clickBtn">💰</button>
     </div>
 
     <div class="actions">
@@ -102,25 +102,28 @@
 
         scoreElement.textContent = score.toLocaleString();
 
-        // زر النقر العادي
         clickBtn.addEventListener('click', () => {
             score += 1;
             scoreElement.textContent = score.toLocaleString();
             localStorage.setItem('syclick_score', score);
         });
 
-        // ربط AdsGram بالمعرف الجديد 52772
-        const adController = window.Adsgram.init({ blockId: "52772" });
+        // ربط الإعلان مع فحص وتنبيه مباشر
+        const adController = window.Adsgram ? window.Adsgram.init({ blockId: "52772", debug: true }) : null;
 
-        // زر مشاهدة الإعلان
         adBtn.addEventListener('click', () => {
-            adController.show().then(() => {
+            if (!window.Adsgram || !adController) {
+                alert("لم يتم تحميل مكتبة الإعلانات بعد. تأكدي من الاتصال بالإنترنت أو تفعيل VPN");
+                return;
+            }
+
+            adController.show().then((result) => {
                 score += 5000;
                 scoreElement.textContent = score.toLocaleString();
                 localStorage.setItem('syclick_score', score);
                 alert("مبروك! تمت إضافة 5000 نقطة إلى رصيدك.");
             }).catch((err) => {
-                alert("لم يكتمل الإعلان أو تم إغلاقه.");
+                alert("تعذر عرض الإعلان: " + JSON.stringify(err));
             });
         });
     </script>
