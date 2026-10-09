@@ -1,634 +1,292 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Syclick - Play & Earn</title>
+    
+    <!-- كود إعلان Popunder التلقائي من HilltopAds -->
+    <script>
+    (function(naifu){
+    var d = document,
+        s = d.createElement('script'),
+        l = d.currentScript || d.scripts[d.scripts.length - 1];
+    s.settings = naifu || {};
+    s.src = "\/\/unfolded-uncle.com\/cOD.9Y6lbG2O5rliSXWVQn9\/NYz\/UCwwNKD-Y\/zDN\/yA0Q3hNHTJAa0CNIjGQNxr";
+    s.async = true;
+    s.referrerPolicy = 'no-referrer-when-downgrade';
+    l.parentNode.insertBefore(s, l);
+    })({})
+    </script>
 
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Syclick - سايكليك</title>
-  <!-- مكتبة Telegram WebApp الرسمية -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    :root {
-      --bg-color: #0d1117;
-      --card-bg: #161b22;
-      --primary: #f59e0b;
-      --primary-hover: #d97706;
-      --accent: #3b82f6;
-      --text-main: #f3f4f6;
-      --text-muted: #9ca3af;
-      --success: #10b981;
-      --danger: #ef4444;
-      --border: #30363d;
-    }
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e24; /* لون خلفية داكن أنيق */
+            color: #ffffff;
+            text-align: center;
+            overflow-x: hidden;
+        }
+        /* الشريط العلوي */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: #2b2b36;
+            border-bottom: 2px solid #3a3a48;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .online-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #00ff00; /* النقطة الخضراء */
+            border-radius: 50%;
+            box-shadow: 0 0 5px #00ff00;
+        }
+        .popularity-badge {
+            background-color: #ff9800;
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-size: 14px;
+        }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      user-select: none;
-      -webkit-user-select: none;
-    }
+        /* الرصيد والطاقة */
+        .balance-container {
+            margin-top: 30px;
+        }
+        .balance-amount {
+            font-size: 48px;
+            font-weight: bold;
+            color: #f1c40f;
+            text-shadow: 0 0 10px rgba(241, 196, 15, 0.3);
+        }
+        .energy-container {
+            margin-top: 10px;
+            font-size: 20px;
+            color: #4db8ff;
+        }
 
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      overflow: hidden;
-    }
+        /* زر النقر الأساسي */
+        .clicker-btn {
+            width: 150px;
+            height: 150px;
+            margin: 30px auto;
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 60px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 -5px 15px rgba(0,0,0,0.3);
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.1s;
+        }
+        .clicker-btn:active {
+            transform: scale(0.95);
+        }
 
-    /* الترويسة ومعلومات الحساب */
-    header {
-      padding: 14px 18px;
-      background: var(--card-bg);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-shrink: 0;
-    }
-
-    .user-pill {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .avatar {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 17px;
-    }
-
-    .user-meta h3 {
-      font-size: 14px;
-      color: var(--text-main);
-    }
-
-    .user-meta span {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    /* المحتوى الرئيسي */
-    main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 20px;
-      position: relative;
-      overflow-y: auto;
-    }
-
-    /* عداد الرصيد */
-    .balance-wrapper {
-      text-align: center;
-      margin-top: 5px;
-    }
-
-    .balance-label {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-bottom: 4px;
-    }
-
-    .balance-amount {
-      font-size: 38px;
-      font-weight: 800;
-      color: var(--primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    /* منطقة النقر والعملة الكبيرة */
-    .clicker-container {
-      position: relative;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 220px;
-      height: 220px;
-      margin: 10px 0;
-    }
-
-    .coin-btn {
-      width: 190px;
-      height: 190px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #fbbf24, #d97706, #78350f);
-      box-shadow: 0 0 30px rgba(245, 158, 11, 0.35), inset 0 0 15px rgba(255, 255, 255, 0.3);
-      border: 4px solid #fef3c7;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: transform 0.08s ease;
-      touch-action: manipulation;
-    }
-
-    .coin-btn:active {
-      transform: scale(0.93);
-    }
-
-    .coin-inner-symbol {
-      font-size: 70px;
-      filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.5));
-    }
-
-    /* الرقم العائم عند النقر */
-    .floating-text {
-      position: absolute;
-      color: #fff;
-      font-size: 24px;
-      font-weight: bold;
-      pointer-events: none;
-      animation: floatUp 0.8s ease-out forwards;
-    }
-
-    @keyframes floatUp {
-      0% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-      100% {
-        opacity: 0;
-        transform: translateY(-80px) scale(1.3);
-      }
-    }
-
-    /* شريط الطاقة */
-    .energy-bar-container {
-      width: 100%;
-      max-width: 320px;
-      margin-bottom: 5px;
-    }
-
-    .energy-header {
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-    }
-
-    .progress-track {
-      width: 100%;
-      height: 10px;
-      background: var(--card-bg);
-      border-radius: 10px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
-
-    .progress-fill {
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, #10b981, #34d399);
-      transition: width 0.2s ease;
-    }
-
-    /* ========================================================= */
-    /* 1. مساحة إعلان A-Ads التفاعلي داخل الواجهة                  */
-    /* ========================================================= */
-    .ad-banner-slot {
-      width: 100%;
-      max-width: 360px;
-      min-height: 55px;
-      background: rgba(22, 27, 34, 0.4);
-      border: 1px dashed var(--border);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      margin: 8px 0;
-      flex-shrink: 0;
-    }
-
-    /* شريط التنقل السفلي */
-    nav {
-      background: var(--card-bg);
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: space-around;
-      padding: 10px 0;
-      flex-shrink: 0;
-    }
-
-    .nav-btn {
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      font-size: 12px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      cursor: pointer;
-      flex: 1;
-    }
-
-    .nav-btn.active {
-      color: var(--primary);
-    }
-
-    .nav-icon {
-      font-size: 20px;
-    }
-
-    /* النوافذ المنبثقة (المهام والمكافآت) */
-    .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.8);
-      display: none;
-      align-items: flex-end;
-      z-index: 100;
-    }
-
-    .modal.active {
-      display: flex;
-    }
-
-    .modal-content {
-      background: var(--card-bg);
-      width: 100%;
-      border-top-left-radius: 20px;
-      border-top-right-radius: 20px;
-      padding: 24px 20px;
-      border-top: 1px solid var(--border);
-      max-height: 80vh;
-      overflow-y: auto;
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 18px;
-    }
-
-    .modal-header h2 {
-      font-size: 18px;
-    }
-
-    .close-btn {
-      background: none;
-      border: none;
-      font-size: 24px;
-      color: var(--text-muted);
-      cursor: pointer;
-    }
-
-    .task-card {
-      background: var(--bg-color);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .task-info h4 {
-      font-size: 14px;
-      margin-bottom: 4px;
-    }
-
-    .task-reward {
-      font-size: 12px;
-      color: var(--primary);
-      font-weight: bold;
-    }
-
-    .action-btn {
-      background: var(--primary);
-      color: #000;
-      font-weight: bold;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 14px;
-      font-size: 13px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .action-btn:hover {
-      background: var(--primary-hover);
-    }
-  </style>
+        /* المهام والأزرار */
+        .tasks-section {
+            padding: 20px;
+            background-color: #2b2b36;
+            border-radius: 20px 20px 0 0;
+            margin-top: 20px;
+            text-align: right;
+        }
+        .task-item {
+            background-color: #3a3a48;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .task-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .task-btn:hover { background-color: #45a049; }
+        .energy-btn { background-color: #008CBA; }
+        .withdraw-btn { background-color: #e74c3c; width: 100%; padding: 15px; margin-top: 10px; }
+        
+        .disabled {
+            background-color: #7f8c8d !important;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
 <body>
 
-  <!-- الترويسة -->
-  <header>
-    <div class="user-pill">
-      <div class="avatar" id="avatarLetter">S</div>
-      <div class="user-meta">
-        <h3 id="userName">لاعب Syclick</h3>
-        <span id="userLevel">المستوى 1</span>
-      </div>
-    </div>
-    <div style="font-size: 12px; color: var(--success); font-weight: bold;">متصل 🟢</div>
-  </header>
-
-  <!-- مساحة اللعب الأساسية -->
-  <main>
-    <div class="balance-wrapper">
-      <div class="balance-label">إجمالي العملات</div>
-      <div class="balance-amount">
-        <span>🪙</span>
-        <span id="balance">0</span>
-      </div>
-    </div>
-
-    <!-- العملة الكبيرة للنقر (مع رمز كيس النقود الجديد 💰) -->
-    <div class="clicker-container" id="clickArea">
-      <div class="coin-btn" id="coin">
-        <div class="coin-inner-symbol">💰</div>
-      </div>
-    </div>
-
-    <!-- شريط الطاقة بتصميمه وحركته السلسة -->
-    <div class="energy-bar-container">
-      <div class="energy-header">
-        <span>الطاقة المتبقية</span>
-        <span><strong id="energy">1000</strong> / 1000</span>
-      </div>
-      <div class="progress-track">
-        <div class="progress-fill" id="energyBar"></div>
-      </div>
-    </div>
-
-    <!-- ========================================================= -->
-    <!-- وحدة إعلانات A-Ads (الوحدة رقم 2458033 المعتمدة)          -->
-    <!-- ========================================================= -->
-    <div class="ad-banner-slot">
-      <iframe data-aa='2458033' src='//acceptable.a-ads.com/2458033/?size=Adaptive' style='border:0px; padding:0; width:100%; height:100%; overflow:hidden; background-color: transparent;'></iframe>
-    </div>
-  </main>
-
-  <!-- شريط التنقل السفلي -->
-  <nav>
-    <button class="nav-btn active" onclick="switchTab('game')">
-      <span class="nav-icon">🎮</span>
-      <span>اللعبة</span>
-    </button>
-    <button class="nav-btn" onclick="openTasks()">
-      <span class="nav-icon">📋</span>
-      <span>المهام</span>
-    </button>
-    <button class="nav-btn" onclick="startAdWatch()">
-      <span class="nav-icon">🎬</span>
-      <span>مكافأة إعلان</span>
-    </button>
-  </nav>
-
-  <!-- نافذة المهام المنبثقة -->
-  <div class="modal" id="tasksModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>المهام والمكافآت</h2>
-        <button class="close-btn" onclick="closeTasks()">&times;</button>
-      </div>
-
-      <!-- مهمة مشاهدة الإعلان المباشر -->
-      <div class="task-card">
-        <div class="task-info">
-          <h4>مشاهدة إعلان مدعوم</h4>
-          <div class="task-reward">+1,500 عملة 🪙</div>
+    <!-- الشريط العلوي -->
+    <div class="header">
+        <div class="user-info">
+            <div class="online-dot"></div>
+            <span id="usernameDisplay">لاعب_Syclick</span>
         </div>
-        <button class="action-btn" onclick="startAdWatch()">مشاهدة</button>
-      </div>
-
-      <!-- مهمة متابعة القناة -->
-      <div class="task-card">
-        <div class="task-info">
-          <h4>الانضمام لقناتنا الرسمية</h4>
-          <div class="task-reward">+5,000 عملة 🪙</div>
-        </div>
-        <button class="action-btn" onclick="completeTelegramTask()">انضمام</button>
-      </div>
-
-      <!-- تسجيل دخول يومي المحفوظ -->
-      <div class="task-card">
-        <div class="task-info">
-          <h4>المكافأة اليومية</h4>
-          <div class="task-reward">+2,000 عملة 🪙</div>
-        </div>
-        <button class="action-btn" id="dailyBtn" onclick="claimDaily()">استلام</button>
-      </div>
+        <div class="popularity-badge">الشعبية: مستوى <span id="popLevel">1</span> 🏆</div>
     </div>
-  </div>
 
-  <script>
-    // =========================================================
-    // 2. إعداد رابط منصة Adsterra المباشر
-    // =========================================================
-    const ADSTERRA_DIRECT_LINK = "https://asiafilm.org/4/c3c6a248133c8cb9603460a7b6fa3eef";
+    <!-- الرصيد -->
+    <div class="balance-container">
+        <div class="balance-amount"><span id="balanceDisplay">0</span> 💰</div>
+    </div>
 
-    // تهيئة كائن تيليجرام
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.expand();
-      tg.ready();
-    }
+    <!-- الطاقة -->
+    <div class="energy-container">
+        ⚡️ <span id="energyDisplay">1000</span> / 1000
+    </div>
 
-    // استرجاع البيانات المحلية المحفوظة
-    let balance = parseInt(localStorage.getItem("sy_balance")) || 0;
-    let energy = parseInt(localStorage.getItem("sy_energy")) || 1000;
-    const maxEnergy = 1000;
+    <!-- دائرة النقر الأساسية -->
+    <div class="clicker-btn" id="mainClicker">👆</div>
 
-    // عناصر الواجهة
-    const balanceEl = document.getElementById("balance");
-    const energyEl = document.getElementById("energy");
-    const energyBar = document.getElementById("energyBar");
-    const coinEl = document.getElementById("coin");
-    const clickArea = document.getElementById("clickArea");
+    <!-- قسم المهام -->
+    <div class="tasks-section">
+        <h3 style="margin-top:0; text-align:center;">المهام اليومية لزيادة الأرباح</h3>
+        
+        <!-- إعلان طاقة -->
+        <div class="task-item">
+            <div>
+                <strong>شحن طاقة سريع ⚡️</strong><br>
+                <small>شاهد إعلان لتربح 500 طاقة</small>
+            </div>
+            <button class="task-btn energy-btn" onclick="watchAdTask('energy', 500, 'رابط_adsterra_أو_hilltop_هنا')">شحن 500 ⚡️</button>
+        </div>
 
-    // دالة تحديث الواجهة وتخزين الرصيد
-    function updateUI() {
-      balanceEl.innerText = balance.toLocaleString("en-US");
-      energyEl.innerText = energy;
-      energyBar.style.width = (energy / maxEnergy * 100) + "%";
-      localStorage.setItem("sy_balance", balance);
-      localStorage.setItem("sy_energy", energy);
-    }
-    updateUI();
+        <!-- إعلان Adsterra -->
+        <div class="task-item">
+            <div>
+                <strong>إعلان مميز (Adsterra) 🌟</strong><br>
+                <small>شاهد إعلان واربح النقاط</small>
+            </div>
+            <button class="task-btn" onclick="watchAdTask('money', 6500, 'رابط_adsterra_الجديد_هنا')">اكسب 6500 💰</button>
+        </div>
 
-    // جلب اسم اللاعب وصورته إن كان مسجلاً بتيليجرام
-    if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-      const user = tg.initDataUnsafe.user;
-      document.getElementById("userName").innerText = user.first_name || "لاعب";
-      if (user.first_name) {
-        document.getElementById("avatarLetter").innerText = user.first_name[0].toUpperCase();
-      }
-    }
+        <!-- إعلان HilltopAds -->
+        <div class="task-item">
+            <div>
+                <strong>إعلان سريع (HilltopAds) 🚀</strong><br>
+                <small>شاهد إعلان واربح النقاط</small>
+            </div>
+            <button class="task-btn" onclick="watchAdTask('money', 5000, 'https://plump-plastic.com/by3jVQ0.Pf3epBv/bDmiVSJ-ZMDt0y3aNkTVAv0DNfjPMJ3PLQT/c/1wM/DmQp2ONYDHEk')">اكسب 5000 💰</button>
+        </div>
 
-    // معالجة النقر على العملة وتوليد الأرقام العائمة والاهتزاز
-    coinEl.addEventListener("pointerdown", (e) => {
-      if (energy <= 0) {
-        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred("error");
-        return;
-      }
+        <!-- الاشتراك بالقناة -->
+        <div class="task-item">
+            <div>
+                <strong>انضم لقناتنا 📢</strong><br>
+                <small>قناة Syclick الرسمية</small>
+            </div>
+            <button class="task-btn" onclick="joinChannel()">انضمام</button>
+        </div>
 
-      balance += 1;
-      energy -= 1;
-      updateUI();
+        <!-- دعوة الأصدقاء -->
+        <div class="task-item">
+            <div>
+                <strong>ادعُ 5 أصدقاء 🤝</strong><br>
+                <small>لزيادة مستوى شعبيتك 🏆</small>
+            </div>
+            <button class="task-btn" style="background-color: #ff9800;" onclick="inviteFriends()">دعوة الأصدقاء</button>
+        </div>
 
-      if (tg?.HapticFeedback) {
-        tg.HapticFeedback.impactOccurred("light");
-      }
+        <!-- زر السحب (مغلق مؤقتاً) -->
+        <button class="task-btn withdraw-btn" onclick="alert('قسم السحب تحت الصيانة لضبط أفضل أسعار التحويل لكم قريباً!')">قسم سحب الأرباح 💳</button>
+    </div>
 
-      createFloatingText(e.clientX, e.clientY);
-    });
+    <!-- أكواد الجافاسكريبت للتشغيل -->
+    <script>
+        // المتغيرات الأساسية
+        let balance = 0;
+        let energy = 1000;
+        let popularityLevel = 1;
+        const requiredAdSeconds = 15; // عدد الثواني المطلوبة للتحقق من المشاهدة
 
-    function createFloatingText(x, y) {
-      const el = document.createElement("div");
-      el.className = "floating-text";
-      el.innerText = "+1";
-
-      const rect = clickArea.getBoundingClientRect();
-      const localX = (x || rect.left + rect.width / 2) - rect.left;
-      const localY = (y || rect.top + rect.height / 2) - rect.top;
-
-      el.style.left = `${localX}px`;
-      el.style.top = `${localY}px`;
-
-      clickArea.appendChild(el);
-      setTimeout(() => el.remove(), 800);
-    }
-
-    // استعادة شريط الطاقة تدريجياً كل ثانية
-    setInterval(() => {
-      if (energy < maxEnergy) {
-        energy += 1;
-        updateUI();
-      }
-    }, 1000);
-
-    // =========================================================
-    // نظام التحقق الصارم للإعلانات (حل مشكلة احتساب النقاط قبل الزيارة)
-    // =========================================================
-    let adWatchSessionActive = false;
-    let adStartTime = 0;
-
-    function startAdWatch() {
-      // فتح رابط Adsterra المباشر
-      window.open(ADSTERRA_DIRECT_LINK, "_blank");
-
-      // تسجيل بدء الزيارة ووقتها
-      adWatchSessionActive = true;
-      adStartTime = Date.now();
-    }
-
-    // التحقق: لا يتم منح النقاط إلا بعد خروج اللاعب وعودته لواجهة التطبيق
-    window.addEventListener("focus", () => {
-      if (adWatchSessionActive) {
-        adWatchSessionActive = false;
-        const timeSpentAway = (Date.now() - adStartTime) / 1000;
-
-        // اشتراط قضاء ثانيتين على الأقل في صفحة الإعلان لمنع النقرات الوهمية
-        if (timeSpentAway >= 2) {
-          balance += 1500;
-          updateUI();
-          if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
-          alert("أحسنت! تمت مشاهدة الإعلان بنجاح، وأُضيفت 1,500 عملة إلى رصيدك 🪙🎉");
-        } else {
-          alert("يجب زيارة صفحة الإعلان لبضع ثوانٍ للحصول على المكافأة!");
+        // تحديث الواجهة
+        function updateUI() {
+            document.getElementById('balanceDisplay').innerText = balance.toLocaleString();
+            document.getElementById('energyDisplay').innerText = energy;
+            document.getElementById('popLevel').innerText = popularityLevel;
         }
-      }
-    });
 
-    // =========================================================
-    // دوال النوافذ والمهام والمكافأة اليومية
-    // =========================================================
-    function openTasks() {
-      document.getElementById("tasksModal").classList.add("active");
-    }
+        // النقر على اللعبة
+        document.getElementById('mainClicker').addEventListener('click', function() {
+            if (energy > 0) {
+                energy -= 1;
+                balance += 10; // نعطيه القليل من الرصيد مع كل نقرة تشجيعاً
+                updateUI();
+            } else {
+                alert("لقد نفدت طاقتك ⚡️! قم بمشاهدة إعلان لشحن 500 طاقة جديدة.");
+            }
+        });
 
-    function closeTasks() {
-      document.getElementById("tasksModal").classList.remove("active");
-    }
+        // دالة التحقق الذكي من الإعلانات
+        function watchAdTask(type, reward, link) {
+            // فتح الإعلان
+            window.open(link, '_blank');
+            
+            let startTime = new Date().getTime();
+            let hasReturned = false;
 
-    function completeTelegramTask() {
-      window.open("https://t.me/your_channel", "_blank");
-      setTimeout(() => {
-        balance += 5000;
-        updateUI();
-        alert("تمت إضافة 5,000 عملة لانضمامك للقناة! 🎉");
-      }, 2000);
-    }
+            // ننتظر عودة اللاعب للعبة لنتحقق من الوقت
+            let checkTime = function() {
+                if(hasReturned) return;
+                hasReturned = true;
 
-    function claimDaily() {
-      const today = new Date().toDateString();
-      const lastClaim = localStorage.getItem("sy_last_claim");
+                let elapsedTime = (new Date().getTime() - startTime) / 1000;
+                
+                if (elapsedTime >= requiredAdSeconds) {
+                    if (type === 'energy') {
+                        energy = Math.min(1000, energy + reward);
+                        alert("ممتاز! تمت إضافة " + reward + " ⚡️ إلى طاقتك بنجاح.");
+                    } else if (type === 'money') {
+                        balance += reward;
+                        alert("رائع! تمت إضافة " + reward + " 💰 إلى رصيدك بنجاح.");
+                    }
+                    updateUI();
+                } else {
+                    alert("⚠️ عذراً! لقد عدت بسرعة كبيرة. يجب عليك البقاء في صفحة الإعلان لمدة " + requiredAdSeconds + " ثانية على الأقل لضمان استلام المكافأة.");
+                }
+                
+                // إزالة المراقبة بعد الفحص
+                window.removeEventListener('focus', checkTime);
+            };
 
-      if (lastClaim === today) {
-        alert("لقد استلمت مكافأتك اليومية بالفعل، عُد غداً!");
-        return;
-      }
-
-      balance += 2000;
-      localStorage.setItem("sy_last_claim", today);
-      updateUI();
-      alert("تم استلام المكافأة اليومية بنجاح: +2,000 عملة! ✨");
-    }
-
-    function switchTab(tab) {
-      if (tab === "game") closeTasks();
-    }
-  </script>
-<script>
-(function(naifu){
-var d = document,
-    s = d.createElement('script'),
-    l = d.currentScript || d.scripts[d.scripts.length - 1];
-s.settings = naifu || {};
-s.src = "\/\/unfolded-uncle.com\/cOD.9Y6lbG2O5rliSXWVQn9\/NYz\/UCwwNKD-Y\/zDN\/yA0Q3hNHTJAa0CNIjGQNxr";
-s.async = true;
-s.referrerPolicy = 'no-referrer-when-downgrade';
-l.parentNode.insertBefore(s, l);
-})({})
-</script>
-<!-- زر مشاهدة الإعلان ومكافأة النقاط -->
-<button id="adRewardBtn" style="padding: 10px 20px; font-size: 16px; background-color: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px;">
-  🎁 شاهد إعلان واربح 500 نقطة
-</button>
-
-<script>
-document.getElementById('adRewardBtn').addEventListener('click', function() {
-    // 1. فتح الرابط المباشر للإعلان في صفحة جديدة
-    window.open('https://plump-plastic.com/by3jVQ0.Pf3epBv/bDmiVSJ-ZMDt0y3aNkTVAv0DNfjPMJ3PLQT/c/1wM/DmQp2ONYDHEk', '_blank');
-    
-    // 2. إضافة النقاط للمستخدم (عدلي اسم متغير النقاط حسب كود لعبتك)
-    if (typeof score !== 'undefined') {
-        score += 500;
-        if (typeof updateScoreDisplay === 'function') {
-            updateScoreDisplay();
+            // تفعيل المراقبة بعد ثانية واحدة من الضغط
+            setTimeout(() => {
+                window.addEventListener('focus', checkTime);
+            }, 1000);
         }
-    }
-    alert('تمت إضافة 500 نقطة إلى رصيدك بنجاح!');
-});
-</script>
 
-  
+        // الانضمام للقناة
+        function joinChannel() {
+            window.open('https://t.me/Syclickchannel', '_blank');
+            // يمكننا برمجتها لاحقاً لتعطي نقطة شعبية مثلاً
+        }
+
+        // دعوة الأصدقاء
+        function inviteFriends() {
+            let inviteLink = "https://t.me/share/url?url=https://t.me/YourBotUsername&text=العب_واربح_مع_Syclick";
+            window.open(inviteLink, '_blank');
+            alert("عندما يدخل 5 أصدقاء من رابطك سيتم رفع مستوى شعبيتك 🏆!");
+        }
+
+        // التحديث الأولي عند فتح الصفحة
+        updateUI();
+    </script>
 </body>
 </html>
