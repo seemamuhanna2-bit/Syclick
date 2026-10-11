@@ -68,9 +68,8 @@ def get_user(user_id):
     cursor.execute("SELECT points, energy, joined_channel FROM users WHERE user_id = ?", (user_id,))
     row = cursor.fetchone()
     if not row:
-                cursor.execute("INSERT INTO users (user_id, points, energy) VALUES (?, 0, 1000)", (user_id,))
-
-        conn.commit()
+cursor.execute("INSERT INTO users (user_id, points, energy) VALUES (?, 0, 1000)", (user_id,))
+conn.commit()
         row = (0, 1000, 0)
     conn.close()
     return row
