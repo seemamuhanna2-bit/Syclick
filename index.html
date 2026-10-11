@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SyClick Mini App</title>
+    <!-- مكتبة تلغرام الأساسية لربط الواجهة بالبوت -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* ألوان متوافقة مع الوضع المظلم لتلغرام تلقائياً */
+        body {
+            background-color: var(--tg-theme-bg-color, #18222d);
+            color: var(--tg-theme-text-color, #ffffff);
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            user-select: none;
+        }
+        /* القسم العلوي (الطاقة والكابتشا) */
+        .header {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--tg-theme-secondary-bg-color, #232e3c);
+            border-bottom: 2px solid #333;
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .energy-box {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #ffcc00;
+        }
+        .captcha-btn {
+            background-color: #0088cc;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 90%;
+            transition: 0.2s;
+        }
+        .captcha-btn:active { transform: scale(0.95); }
+        
+        /* قسم المحتوى الأساسي */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 90px;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* البطاقات (المهام، الأصدقاء، المحفظة) */
+        .card {
+            background-color: var(--tg-theme-secondary-bg-color, #232e3c);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #333;
+        }
+        .card-info strong { font-size: 16px; }
+        .card-info small { color: #aaa; font-size: 13px; }
+        .btn-action {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* شريط التنقل السفلي */
+        .navbar {
+            display: flex;
+            justify-content: space-around;
+            background-color: var(--tg-theme-secondary-bg-color, #232e3c);
+            padding: 12px 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            border-top: 1px solid #333;
+            border-radius: 20px 20px 0 0;
+        }
+        .nav-item {
+            text-align: center;
+            cursor: pointer;
+            font-size: 13px;
+            color: #888;
+            flex: 1;
+        }
+        .nav-item.active {
+            color: var(--tg-theme-button-color, #0088cc);
+            font-weight: bold;
+        }
+        .nav-icon {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- الواجهة العلوية ثابتة: الطاقة والكابتشا -->
+    <div class="header">
+        <div class="energy-box">⚡ الطاقة: <span id="energy">1000</span> / 1000</div>
+        <button class="captcha-btn" onclick="sendToBot('request_captcha')">🧩 حل كابتشا (+2 💰)</button>
+    </div>
+
+    <!-- المحتوى المتغير -->
+    <div class="content">
+        
+        <!-- صفحة المهام -->
+        <div id="tasks" class="tab-content active">
+            <h3 style="margin-top:0;">🎮 مهام العملاء</h3>
+            
+            <div class="card">
+                <div class="card-info">
+                    <strong>الانضمام لقناة SyClick</strong><br>
+                    <small>المكافأة: +50 💰</small>
+                </div>
+                <button class="btn-action" onclick="sendToBot('join_channel')">تنفيذ</button>
+            </div>
+
+            <div class="card">
+                <div class="card-info">
+                    <strong>تقييم تطبيق (قريباً)</strong><br>
+                    <small>المكافأة: +100 💰</small>
+                </div>
+                <button class="btn-action" style="background-color:gray;">قريباً</button>
+            </div>
+        </div>
+
+        <!-- صفحة الأصدقاء -->
+        <div id="friends" class="tab-content">
+            <h3 style="margin-top:0;">👥 نظام الإحالة الآمن</h3>
+            <div class="card" style="flex-direction: column; text-align:center;">
+                <p style="font-size: 14px; color: #ccc;">احصل على مكافأة لكل 5 أصدقاء ينضمون ويتفاعلون حقيقياً (لضمان منع الحسابات الوهمية).</p>
+                <button class="captcha-btn" style="background-color: #ff9800; width: 100%; margin-top:10px;" onclick="sendToBot('invite')">🔗 نسخ رابط الدعوة</button>
+            </div>
+        </div>
+
+        <!-- صفحة المحفظة -->
+        <div id="wallet" class="tab-content">
+            <h3 style="margin-top:0;">💰 محفظتي</h3>
+            <div class="card" style="flex-direction: column; text-align:center; padding: 30px 15px;">
+                <h2 style="margin: 0; color: #4caf50;">الرصيد: <span id="balance">0</span> 💰</h2>
+                <p style="color: #aaa; font-size: 13px;">الحد الأدنى للسحب: 10,000 💰</p>
+                <button class="btn-action" style="width:100%; margin-top: 15px; padding: 12px;" onclick="sendToBot('withdraw')">طلب سحب الرصيد</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- شريط التنقل السفلي -->
+    <div class="navbar">
+        <div class="nav-item active" onclick="switchTab('tasks', this)">
+            <span class="nav-icon">🎮</span>
+            المهام
+        </div>
+        <div class="nav-item" onclick="switchTab('friends', this)">
+            <span class="nav-icon">👥</span>
+            الأصدقاء
+        </div>
+        <div class="nav-item" onclick="switchTab('wallet', this)">
+            <span class="nav-icon">💰</span>
+            المحفظة
+        </div>
+    </div>
+
+    <!-- سكربت التشغيل والتنقل -->
+    <script>
+        // تهيئة واجهة تلغرام
+        let tg = window.Telegram.WebApp;
+        tg.expand(); // لجعل التطبيق يملأ الشاشة
+
+        // دالة التنقل بين الصفحات
+        function switchTab(tabId, element) {
+            // إخفاء كل المحتوى
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            // إزالة اللون الأزرق من كل الأزرار السفلية
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            
+            // إظهار المحتوى المطلوب وتلوين الزر الخاص به
+            document.getElementById(tabId).classList.add('active');
+            element.classList.add('active');
+        }
+
+        // دالة التواصل مع البوت
+        function sendToBot(action) {
+            // تقوم بإرسال الأمر للبوت عند ضغط المستخدم على أي زر في الواجهة
+            tg.sendData(action);
+        }
+    </script>
+</body>
+</html>
