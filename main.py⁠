@@ -1,3 +1,22 @@
+import os
+from flask import Flask
+from threading import Thread
+
+# خادم الويب لترضى منصة Render
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Bot is active!"
+
+def run_web():
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
+
+def keep_alive():
+    t = Thread(target=run_web)
+    t.start()
+
 import telebot
 from telebot import types
 import sqlite3
@@ -177,5 +196,8 @@ def invite_cmd(message):
         "انسخ الرابط وشاركه مع أصدقائك؛ ستحصل على 100 نقطة 💎 لكل 5 أصدقاء ينضمون ويتفاعلون في المنصة! 🚀",
         parse_mode="Markdown"
     )
+if __name__ == '__main__':
+    keep_alive()        # تشغيل خادم الويب في الخلفية
+    bot.infinity_polling()  # تشغيل بوتكِ الأصلي بشكل طبيعي
 
-bot.infinity_polling()
+
