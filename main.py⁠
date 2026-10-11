@@ -47,6 +47,16 @@ def init_db():
             referrer_id INTEGER DEFAULT 0
         )
     ''')
+    # إنشاء جدول المهام لإضافة طلبات العملاء لاحقاً
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS tasks (
+            task_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT,
+            reward INTEGER,
+            url TEXT
+        )
+    ''')
+
     conn.commit()
     conn.close()
 
@@ -58,9 +68,10 @@ def get_user(user_id):
     cursor.execute("SELECT points, energy, joined_channel FROM users WHERE user_id = ?", (user_id,))
     row = cursor.fetchone()
     if not row:
-        cursor.execute("INSERT INTO users (user_id, points, energy) VALUES (?, 0, 5)", (user_id,))
+                cursor.execute("INSERT INTO users (user_id, points, energy) VALUES (?, 0, 1000)", (user_id,))
+
         conn.commit()
-        row = (0, 5, 0)
+        row = (0, 1000, 0)
     conn.close()
     return row
 
