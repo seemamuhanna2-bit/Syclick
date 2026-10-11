@@ -24,7 +24,7 @@ import random
 import string
 
 # ================= الإعدادات =================
-BOT_TOKEN = "8637885399:AAEQ9zMqIHGG3Z8I0vanQAN25BAAxgU38X4"
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 CAPTCHA_KEY = "ac5bcab8625c511e59a84f0a5687966f"
 CHANNEL_USERNAME = "@Syclickchannel"  # معرف قناتك للتحقق الإجباري
 # ============================================
