@@ -210,6 +210,43 @@ def invite_cmd(message):
     )
 if __name__ == '__main__':
     keep_alive()        # تشغيل خادم الويب في الخلفية
+# دالة استقبال الأوامر من التطبيق المصغر (Mini App)
+@bot.message_handler(content_types=['web_app_data'])
+def handle_web_app_data(message):
+    action = message.web_app_data.data
+    user_id = message.from_user.id
+    
+    # جلب بيانات المستخدم من قاعدة البيانات
+    user_data = get_user(user_id)
+    points = user_data[0]
+    energy = user_data[1]
+    
+    if action == 'request_captcha':
+        if energy >= 1:
+            # هنا سنقوم لاحقاً بجلب صورة الكابتشا من 2Captcha
+            # حالياً سنقوم بخصم طاقة وإضافة رصيد للتجربة
+            new_energy = energy - 1
+            new_points = points + 2
+            
+            conn = sqlite3.connect('database.db')
+            cursor = conn.cursor()
+            cursor.execute("UPDATE users SET points = ?, energy = ? WHERE user_id = ?", (new_points, new_energy, user_id))
+            conn.commit()
+            conn.close()
+            
+            bot.send_message(user_id, f"✅ تم حل الكابتشا بنجاح!\n⚡ الطاقة المتبقية: {new_energy}\n💰 رصيدك الحالي: {new_points}")
+        else:
+            bot.send_message(user_id, "❌ طاقتك انتهت! يرجى الانتظار حتى يتم شحنها.")
+            
+    elif action == 'withdraw':
+        if points >= 20000:
+            bot.send_message(user_id, "✅ تم استلام طلب السحب الخاص بك سيتم المراجعة قريباً.")
+        else:
+            bot.send_message(user_id, f"❌ رصيدك غير كافٍ. الحد الأدنى للسحب هو 20,000 💰.\nرصيدك الحالي: {points}")
+            
+    elif action == 'invite':
+        bot.send_message(user_id, f"🔗 رابط الدعوة الخاص بك:\nhttps://t.me/C1l1i1k1Bot?start={user_id}\n\nشارك الرابط لتربح عند دخول أصدقائك!")
+
     bot.infinity_polling()  # تشغيل بوتكِ الأصلي بشكل طبيعي
 
 
