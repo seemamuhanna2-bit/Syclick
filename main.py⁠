@@ -82,9 +82,7 @@ def update_user_balance(user_id, points_delta=0, energy_delta=0):
 # إعداد لوحة المفاتيح لتشغيل التطبيق المصغر
 def main_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-    # ملاحظة مهمة جداً: ضعي هنا رابط GitHub Pages الخاص بكِ!
-    # مثال: "https://seema122.github.io/Syclick/"
-    webapp_url = "رابط_موقعك_هنا" 
+    webapp_url = "https://seemamuhanna2-bit.github.io/Syclick/"
     btn_webapp = types.KeyboardButton(text="🚀 فتح التطبيق المصغر (Mini App)", web_app=types.WebAppInfo(url=webapp_url))
     markup.add(btn_webapp)
     return markup
@@ -134,8 +132,8 @@ def handle_web_app_data(message):
             bot.send_message(user_id, f"❌ رصيدك غير كافٍ. الحد الأدنى للسحب هو 20,000 💰.\nرصيدك الحالي: {points}")
             
     elif action == 'invite':
-        # تذكري وضع معرف البوت الخاص بكِ هنا بدلاً من C1l1i1k1Bot
-        bot.send_message(user_id, f"🔗 رابط الدعوة الخاص بك:\nhttps://t.me/C1l1i1k1Bot?start={user_id}\n\nشارك الرابط لتربح عند دخول أصدقائك!")
+        bot_info = bot.get_me()
+        bot.send_message(user_id, f"🔗 رابط الدعوة الخاص بك:\nhttps://t.me/{bot_info.username}?start={user_id}\n\nشارك الرابط لتربح عند دخول أصدقائك!")
 
 if __name__ == '__main__':
     keep_alive()
