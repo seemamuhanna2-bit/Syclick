@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SyClick Mini App</title>
-    <!-- مكتبة تلغرام الأساسية -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
@@ -17,7 +16,6 @@
             user-select: none;
         }
 
-        /* الهيدر العلوي (مع النقاط والطاقة) */
         .header {
             text-align: center;
             padding: 15px;
@@ -48,7 +46,6 @@
             cursor: pointer;
         }
 
-        /* الحاوية الرئيسية */
         .content {
             flex: 1;
             overflow-y: auto;
@@ -115,17 +112,30 @@
         }
         #energyClicker:active { transform: scale(0.9); box-shadow: 0 0 5px rgba(250, 204, 21, 0.8); }
 
-        /* لعبة صناديق الحظ */
-        .box {
-            font-size: 40px;
-            cursor: pointer;
-            background: #334155;
-            padding: 10px 15px;
-            border-radius: 10px;
-            border: 2px solid #475569;
-            transition: 0.2s;
+        /* لعبة إكس أو (XO) */
+        .xo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin-top: 15px;
+            max-width: 200px;
+            margin-left: auto;
+            margin-right: auto;
         }
-        .box:active { transform: scale(0.9); }
+        .xo-cell {
+            background-color: #334155;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid #475569;
+        }
+        .xo-cell.x { color: #38bdf8; }
+        .xo-cell.o { color: #f43f5e; }
 
         /* عجلة الحظ */
         .wheel-wrapper {
@@ -185,7 +195,6 @@
             transition: width 0.5s ease-in-out;
         }
 
-        /* شريط التنقل السفلي */
         .navbar {
             display: flex;
             justify-content: space-around;
@@ -213,23 +222,31 @@
     <div class="content">
         <div id="games" class="tab-content active">
             
-            <!-- زر شحن الطاقة (النقر) -->
+            <!-- زر شحن الطاقة -->
             <div class="card" style="text-align: center;">
                 <h3 style="color: #f59e0b; margin-bottom: 5px;">🔋 شحن الطاقة</h3>
                 <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">انقر على الزر لتعبئة خزان الطاقة (كل نقرة +5 طاقة)</p>
                 <div id="energyClicker" onclick="chargeEnergy()">⚡</div>
             </div>
 
-            <!-- لعبة صناديق الحظ (بديلة للأرقام) -->
+            <!-- لعبة إكس أو (XO) -->
             <div class="card" style="text-align: center;">
-                <h3 style="color: #ec4899; margin-bottom: 5px;">🎁 صناديق الحظ (50 طاقة)</h3>
-                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;">صندوق واحد فقط يحتوي على الماسة! (الجائزة: 20 نقطة)</p>
-                <div style="display: flex; justify-content: space-around; margin-top: 15px;" id="boxesContainer">
-                    <div class="box" onclick="openBox(0)">📦</div>
-                    <div class="box" onclick="openBox(1)">📦</div>
-                    <div class="box" onclick="openBox(2)">📦</div>
-                    <div class="box" onclick="openBox(3)">📦</div>
+                <h3 style="color: #ec4899; margin-bottom: 5px;">❌ إكس أو (50 طاقة)</h3>
+                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;">العب ضد البوت، الفوز يمنحك 30 نقطة!</p>
+                <button class="btn-action" style="background-color: #ec4899; width: auto; padding: 8px 20px;" onclick="startXO()">بدء جولة جديدة</button>
+                <div class="xo-grid" id="xoGrid"></div>
+            </div>
+
+            <!-- لعبة حجرة ورقة مقص -->
+            <div class="card" style="text-align: center;">
+                <h3 style="color: #10b981; margin-bottom: 5px;">✌️ حجرة ورقة مقص (50 طاقة)</h3>
+                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">اغلب البوت واربح 20 نقطة!</p>
+                <div style="display: flex; justify-content: space-around; font-size: 35px;">
+                    <div style="cursor: pointer; background: #334155; padding: 10px; border-radius: 50%; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border: 2px solid #475569;" onclick="playRPS('✊')">✊</div>
+                    <div style="cursor: pointer; background: #334155; padding: 10px; border-radius: 50%; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border: 2px solid #475569;" onclick="playRPS('✋')">✋</div>
+                    <div style="cursor: pointer; background: #334155; padding: 10px; border-radius: 50%; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border: 2px solid #475569;" onclick="playRPS('✌️')">✌️</div>
                 </div>
+                <div id="rpsResult" style="margin-top: 15px; font-weight: bold; font-size: 14px; color: #f8fafc;"></div>
             </div>
 
             <!-- لعبة الذاكرة -->
@@ -253,7 +270,6 @@
                 <div id="wheelResult" style="margin-top: 10px; font-weight: bold; color: #facc15;"></div>
             </div>
 
-            <!-- مهام الدعم والتفاعل بخلفية واضحة جداً ونص الإحالة الجديد -->
             <div class="card" style="background-color: #0f172a; border: 1px solid #38bdf8;">
               <h3 style="margin-bottom: 15px; color: #ffffff;">🔗 مهام الدعم والتفاعل</h3>
               
@@ -409,7 +425,101 @@
             }
         }
 
-        /* 1. لعبة الذاكرة (50 طاقة) */
+        /* =================== لعبة حجرة ورقة مقص =================== */
+        function playRPS(playerChoice) {
+            if (userEnergy < 50) return alert("⚠️ طاقتك لا تكفي (تحتاج 50)! انقر على زر الطاقة لتعبئتها.");
+            updateEnergy(-50);
+            
+            const choices = ['✊', '✋', '✌️'];
+            const botChoice = choices[Math.floor(Math.random() * 3)];
+            let resultText = "";
+            
+            if (playerChoice === botChoice) {
+                resultText = `🤝 تعادل! البوت اختار ${botChoice}`;
+            } else if (
+                (playerChoice === '✊' && botChoice === '✌️') ||
+                (playerChoice === '✋' && botChoice === '✊') ||
+                (playerChoice === '✌️' && botChoice === '✋')
+            ) {
+                resultText = `🎉 فزت! البوت اختار ${botChoice}. (+20 نقطة)`;
+                updatePoints(20);
+            } else {
+                resultText = `❌ خسرت! البوت اختار ${botChoice}`;
+            }
+            
+            document.getElementById('rpsResult').innerText = resultText;
+        }
+
+        /* =================== لعبة إكس أو (XO) =================== */
+        let boardXO = ['','','','','','','','',''];
+        let isGameActiveXO = false;
+
+        function startXO() {
+            if (userEnergy < 50) return alert("⚠️ طاقتك لا تكفي (تحتاج 50)! انقر على زر الطاقة لتعبئتها.");
+            updateEnergy(-50);
+            boardXO = ['','','','','','','','',''];
+            isGameActiveXO = true;
+            renderXO();
+        }
+
+        function renderXO() {
+            const grid = document.getElementById('xoGrid');
+            grid.innerHTML = '';
+            boardXO.forEach((cell, index) => {
+                const div = document.createElement('div');
+                div.className = `xo-cell ${cell === 'X' ? 'x' : (cell === 'O' ? 'o' : '')}`;
+                div.innerText = cell;
+                div.onclick = () => makeMoveXO(index);
+                grid.appendChild(div);
+            });
+        }
+
+        function makeMoveXO(index) {
+            if (!isGameActiveXO || boardXO[index] !== '') return;
+            
+            boardXO[index] = 'X';
+            renderXO();
+            
+            if (checkWinXO('X')) {
+                isGameActiveXO = false;
+                updatePoints(30);
+                setTimeout(() => alert("🎉 بطل! لقد فزت على البوت (+30 نقطة)"), 100);
+                return;
+            }
+            
+            if (!boardXO.includes('')) {
+                isGameActiveXO = false;
+                setTimeout(() => alert("تعادل! لا أحد فاز."), 100);
+                return;
+            }
+            
+            // حركة البوت التلقائية
+            setTimeout(() => {
+                let emptyCells = boardXO.map((val, idx) => val === '' ? idx : null).filter(val => val !== null);
+                if (emptyCells.length === 0) return;
+                
+                let botIdx = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                boardXO[botIdx] = 'O';
+                renderXO();
+                
+                if (checkWinXO('O')) {
+                    isGameActiveXO = false;
+                    setTimeout(() => alert("🤖 للأسف فاز البوت! حظاً أوفر في الجولة القادمة."), 100);
+                }
+            }, 300);
+        }
+
+        function checkWinXO(player) {
+            const winConditions = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+            return winConditions.some(comb => comb.every(idx => boardXO[idx] === player));
+        }
+        renderXO(); // عرض الشبكة فارغة عند البداية
+
+        /* =================== لعبة الذاكرة =================== */
         const symbols = ['⭐', '💎', '🚀', '🔥', '⭐', '💎', '🚀', '🔥'];
         let flipped = [], matchedCount = 0;
         let memoryRoundStarted = false;
@@ -427,12 +537,8 @@
                 card.className = 'memory-card';
                 card.dataset.sym = sym;
                 card.onclick = () => {
-                    // سحب الطاقة عند أول ضغطة في الجولة
                     if (!memoryRoundStarted) {
-                        if (userEnergy < 50) {
-                            alert("⚠️ طاقتك لا تكفي (تحتاج 50)! انقر على زر الطاقة لتعبئتها.");
-                            return;
-                        }
+                        if (userEnergy < 50) return alert("⚠️ طاقتك لا تكفي (تحتاج 50)! انقر على زر الطاقة لتعبئتها.");
                         updateEnergy(-50);
                         memoryRoundStarted = true;
                     }
@@ -450,7 +556,7 @@
                                     if (matchedCount === 8) {
                                         updatePoints(20);
                                         alert('🎉 رائع وسريع! أنهيت البطاقات وربحت 20 نقطة!');
-                                        initMemory(); // إعادة تعيين الجولة
+                                        initMemory();
                                     }
                                 } else {
                                     flipped[0].classList.remove('flipped');
@@ -468,52 +574,16 @@
         }
         initMemory();
 
-        /* 2. لعبة صناديق الحظ (50 طاقة) */
-        let boxesPlaying = false;
-        function openBox(index) {
-            if (boxesPlaying) return;
-            
-            if (userEnergy < 50) {
-                alert("⚠️ طاقتك لا تكفي (تحتاج 50)! انقر على زر الطاقة لتعبئتها.");
-                return;
-            }
-            updateEnergy(-50);
-            boxesPlaying = true;
-            
-            const boxes = document.querySelectorAll('.box');
-            let winningIndex = Math.floor(Math.random() * 4);
-            
-            if (index === winningIndex) {
-                boxes[index].innerText = '💎';
-                updatePoints(20);
-                setTimeout(() => alert("🎉 مبروك! لقد وجدت الماسة وربحت 20 نقطة!"), 100);
-            } else {
-                boxes[index].innerText = '❌';
-                boxes[winningIndex].innerText = '💎';
-                setTimeout(() => alert("للأسف الصندوق فارغ! حاول مرة أخرى."), 100);
-            }
-
-            // إعادة إغلاق الصناديق بعد ثانية ونصف
-            setTimeout(() => {
-                boxes.forEach(b => b.innerText = '📦');
-                boxesPlaying = false;
-            }, 1500);
-        }
-
-        /* 3. عجلة الحظ (70 طاقة) */
+        /* =================== عجلة الحظ =================== */
         let currentRotation = 0;
         function spinWheel() {
-            if (userEnergy < 70) {
-                alert("⚠️ طاقتك لا تكفي (تحتاج 70)! انقر على زر الطاقة لتعبئتها.");
-                return;
-            }
+            if (userEnergy < 70) return alert("⚠️ طاقتك لا تكفي (تحتاج 70)! انقر على زر الطاقة لتعبئتها.");
 
             const lastSpin = localStorage.getItem('last_spin');
             const now = Date.now();
             if (lastSpin && now - parseInt(lastSpin) < 24 * 60 * 60 * 1000) {
                 const hoursLeft = Math.ceil((24 * 60 * 60 * 1000 - (now - parseInt(lastSpin))) / (1000 * 60 * 60));
-                alert(`⚠️ لديك فرصة تدوير واحدة يومياً! عُد بعد ${hoursLeft} ساعة.`);
-                return;
+                return alert(`⚠️ لديك فرصة تدوير واحدة يومياً! عُد بعد ${hoursLeft} ساعة.`);
             }
             
             updateEnergy(-70);
@@ -535,8 +605,7 @@
             const now = Date.now();
             if (lastCheck && now - parseInt(lastCheck) < 24 * 60 * 60 * 1000) {
                 const hoursLeft = Math.ceil((24 * 60 * 60 * 1000 - (now - parseInt(lastCheck))) / (1000 * 60 * 60));
-                alert(`⚠️ لقد استلمت هدية اليوم بالفعل! يرجى العودة بعد ${hoursLeft} ساعة.`);
-                return;
+                return alert(`⚠️ لقد استلمت هدية اليوم بالفعل! يرجى العودة بعد ${hoursLeft} ساعة.`);
             }
             localStorage.setItem('last_checkin', now);
             updatePoints(50);
