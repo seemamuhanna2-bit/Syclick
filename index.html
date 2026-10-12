@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SyClick Mini App</title>
+    <!-- مكتبة تلغرام الأساسية -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
@@ -69,29 +70,31 @@
             cursor: pointer;
             width: 100%;
         }
+        .btn-action:active { transform: scale(0.97); }
 
-        /* لعبة الذاكرة: 16 بطاقة (4x4) */
+        /* لعبة الذاكرة: 8 بطاقات سريعة وممتعة (4 أزواج) */
         .memory-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
+            gap: 8px;
             margin-top: 10px;
         }
         .memory-card {
-            height: 55px;
+            height: 65px;
             background-color: #334155;
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
+            font-size: 26px;
             cursor: pointer;
             border: 2px solid #475569;
+            transition: 0.2s;
         }
         .memory-card.flipped { background-color: #0284c7; border-color: #38bdf8; }
         .memory-card.matched { background-color: #10b981; border-color: #34d399; pointer-events: none; }
 
-        /* لعبة النقر السريع (أيقونة الطاقة) */
+        /* لعبة النقر السريع (صيد البرق ⚡) */
         .tap-area {
             position: relative;
             height: 160px;
@@ -110,22 +113,23 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
+            font-size: 24px;
             cursor: pointer;
+            box-shadow: 0 0 10px #f59e0b;
         }
 
-        /* عجلة الحظ البصرية */
+        /* عجلة الحظ البصرية الدوارة */
         .wheel-wrapper {
             position: relative;
-            width: 180px;
-            height: 180px;
+            width: 170px;
+            height: 170px;
             margin: 15px auto;
         }
         .wheel-circle {
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            border: 6px solid #facc15;
+            border: 5px solid #facc15;
             background: conic-gradient(
                 #ef4444 0deg 60deg,
                 #3b82f6 60deg 120deg,
@@ -143,24 +147,36 @@
             transform: translateX(-50%);
             width: 0;
             height: 0;
-            border-left: 12px solid transparent;
-            border-right: 12px solid transparent;
-            border-top: 22px solid #ffffff;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 20px solid #ffffff;
             z-index: 10;
         }
 
-        /* سحب الأرباح */
-        .withdraw-select, .withdraw-input {
-            width: 100%;
-            padding: 10px;
-            border-radius: 8px;
+        /* شريط تقدم المستوى في المحفظة */
+        .progress-box {
+            background-color: #0f172a;
+            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid #334155;
+            margin-bottom: 15px;
+            text-align: right;
+        }
+        .progress-bar-bg {
             background-color: #334155;
-            color: white;
-            border: 1px solid #475569;
-            margin-bottom: 12px;
+            height: 14px;
+            border-radius: 7px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress-bar-fill {
+            background: linear-gradient(90deg, #38bdf8, #10b981);
+            height: 100%;
+            width: 5%;
+            transition: width 0.5s ease-in-out;
         }
 
-        /* الشريط السفلي */
+        /* الشريط السفلي للتنقل */
         .navbar {
             display: flex;
             justify-content: space-around;
@@ -179,6 +195,7 @@
 </head>
 <body>
 
+    <!-- الهيدر العلوي -->
     <div class="header">
         <div class="balance-box">💎 رصيدك: <span id="balance">0</span> نقطة</div>
         <button class="daily-btn" onclick="dailyCheckIn()">📅 استلام الحضور اليومي (+50)</button>
@@ -186,32 +203,32 @@
 
     <div class="content">
         
-        <!-- صفحة الألعاب التفاعلية -->
+        <!-- صفحة الألعاب التفاعلية السريعة -->
         <div id="games" class="tab-content active">
             
-            <!-- 1. لعبة الذاكرة (16 بطاقة) -->
+            <!-- 1. لعبة الذاكرة: 8 كروت خفيفة وسريعة -->
             <div class="card">
-                <h3 style="margin: 0; color: #38bdf8;">🧠 تحدي الذاكرة (16 بطاقة)</h3>
-                <p style="font-size: 13px; color: #94a3b8; margin: 4px 0 8px 0;">اطابق كل زوجين متماثلين لتربح 50 نقطة!</p>
+                <h3 style="margin: 0; color: #38bdf8;">🧠 تحدي الذاكرة السريعة</h3>
+                <p style="font-size: 13px; color: #94a3b8; margin: 4px 0 8px 0;">اطابق كل زوجين متماثلين لتربح 20 نقطة فوراً!</p>
                 <div class="memory-grid" id="memoryGrid"></div>
             </div>
 
-            <!-- 2. لعبة النقر السريع (أيقونة الطاقة) -->
+            <!-- 2. لعبة صيد البرق (النقر السريع) -->
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h3 style="margin: 0; color: #f59e0b;">⚡ تحدي صيد الطاقة</h3>
                     <span id="tapTimer" style="font-size: 14px; font-weight: bold; color: #facc15;">الوقت: 15 ث</span>
                 </div>
-                <p style="font-size: 13px; color: #94a3b8; margin: 4px 0 8px 0;">اصطد شحنات الطاقة ⚡ بأقصى سرعة!</p>
+                <p style="font-size: 13px; color: #94a3b8; margin: 4px 0 8px 0;">اضغط على شحنات البرق بأقصى سرعة قبل انتهاء الوقت!</p>
                 <button class="btn-action" id="startTapBtn" onclick="startTapGame()" style="background-color: #f59e0b;">بدء الجولة</button>
                 <div class="tap-area" id="tapArea" style="display: none;">
                     <div class="tap-target" id="tapTarget" onclick="hitTarget()">⚡</div>
                 </div>
             </div>
 
-            <!-- 3. لعبة تخمين الرقم (High or Low) -->
+            <!-- 3. لعبة تخمين الرقم -->
             <div class="card" style="text-align: center;">
-                <h3 style="color: #ec4899; margin-bottom: 5px;">🔢 لعبة تخمين الرقم (أكبر أو أصغر)</h3>
+                <h3 style="color: #ec4899; margin-bottom: 5px;">🔢 لعبة تخمين الرقم</h3>
                 <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;">الرقم الحالي: <strong id="currentNum" style="font-size: 20px; color: #fff;">50</strong></p>
                 <div style="display: flex; gap: 10px;">
                     <button class="btn-action" style="background-color: #10b981;" onclick="guessNext(true)">🔼 التالي أكبر</button>
@@ -221,10 +238,10 @@
 
         </div>
 
-        <!-- صفحة عجلة الحظ والمهام -->
+        <!-- صفحة المهام وعجلة الحظ -->
         <div id="tasks" class="tab-content">
             <div class="card" style="text-align: center;">
-                <h3 style="color: #facc15;">🎡 عجلة الحظ البصرية</h3>
+                <h3 style="color: #facc15;">🎡 عجلة الحظ اليومية</h3>
                 <div class="wheel-wrapper">
                     <div class="wheel-pointer"></div>
                     <div class="wheel-circle" id="wheelCircle"></div>
@@ -234,7 +251,7 @@
             </div>
 
             <div class="card">
-                <h3 style="margin-bottom: 10px;">🔗 مهام المتابعة</h3>
+                <h3 style="margin-bottom: 10px;">🔗 مهام الدعم والتفاعل</h3>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                     <span>قناة التليجرام (+20)</span>
                     <button class="daily-btn" onclick="completeTask(20)">انضمام</button>
@@ -250,26 +267,48 @@
             </div>
         </div>
 
-        <!-- صفحة السحب (الحد الأدنى 50 ألف) -->
+        <!-- صفحة المحفظة (شريط تقدم ذكي مع حد سحب غامض) -->
         <div id="wallet" class="tab-content">
-            <div class="card">
-                <h3 style="margin-bottom: 5px;">💰 طلب سحب الأرباح</h3>
-                <p style="font-size: 13px; color: #ef4444; margin-bottom: 12px; font-weight: bold;">الحد الأدنى للسحب: 50,000 نقطة</p>
-                
-                <select class="withdraw-select" id="withdrawMethod">
-                    <option value="sham_cash">شام كاش (Sham Cash)</option>
-                    <option value="haram">شركة الهرم للحوالات</option>
-                    <option value="fouad">شركة الفؤاد للحوالات</option>
-                </select>
+            <div class="card" style="text-align: center;">
+                <div style="display: inline-block; background: #0284c7; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 10px;">
+                    🚀 الإطلاق التجريبي - المستوى الأول
+                </div>
+                <h3 style="margin-bottom: 8px; color: #facc15;">💰 محفظة السحب والأرباح</h3>
+                <p style="font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 15px;">
+                    نقاطك قيد الاحتساب والتثبيت المستمر. عند إكمال شريط التقدم والتأهل للمستوى الأول، سيتم فتح نافذة سحب الأرباح لحسابك تلقائياً!
+                </p>
 
-                <input type="text" class="withdraw-input" id="accountInfo" placeholder="الاسم الثلاثي ورقم الهوية أو رقم الحساب بدقة...">
-                <button class="btn-action" style="background-color: #10b981; padding: 12px;" onclick="requestWithdraw()">تأكيد طلب السحب</button>
+                <!-- شريط التقدم الغامض -->
+                <div class="progress-box">
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: bold;">
+                        <span style="color: #38bdf8;">مدى التقدم للمستوى الأول:</span>
+                        <span id="progressPercent" style="color: #10b981;">0%</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="progressBarFill"></div>
+                    </div>
+                </div>
+
+                <!-- وسائل السحب المحلية لتعزيز المصداقية -->
+                <div style="background: #0f172a; padding: 12px; border-radius: 10px; border: 1px solid #334155; margin-bottom: 15px; text-align: right;">
+                    <div style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-bottom: 6px;">🏦 وسائل التحويل المعتمدة:</div>
+                    <ul style="font-size: 12px; color: #cbd5e1; list-style-position: inside; line-height: 1.8;">
+                        <li>شام كاش (Sham Cash)</li>
+                        <li>شركة الهرم للحوالات</li>
+                        <li>شركة الفؤاد للحوالات</li>
+                    </ul>
+                </div>
+
+                <!-- زر القفل الذكي -->
+                <button class="btn-action" style="background: #475569; padding: 12px; cursor: pointer;" onclick="showProgressStatus()">
+                    🔒 فتح السحب (قيد التأهيل للمستوى الأول)
+                </button>
             </div>
         </div>
 
     </div>
 
-    <!-- شريط التنقل -->
+    <!-- شريط التنقل السفلي -->
     <div class="navbar">
         <div class="nav-item active" onclick="switchTab('games', this)">
             <span class="nav-icon">🎮</span>
@@ -296,6 +335,16 @@
             userPoints += amount;
             localStorage.setItem('syclick_points', userPoints);
             document.getElementById('balance').innerText = userPoints.toLocaleString();
+            updateProgressBar();
+        }
+
+        // تحديث شريط التقدم بنسبة غامضة ومشوقة
+        function updateProgressBar() {
+            // حساب النسبة تدريجياً بحيث تمتلئ ببطء دون كشف رقم النهاية
+            let percent = Math.min(Math.floor((userPoints / 30000) * 100), 98);
+            if (userPoints === 0) percent = 2;
+            document.getElementById('progressPercent').innerText = percent + '%';
+            document.getElementById('progressBarFill').style.width = percent + '%';
         }
 
         function switchTab(tabId, el) {
@@ -305,8 +354,8 @@
             el.classList.add('active');
         }
 
-        /* 1. لعبة الذاكرة: 16 بطاقة (8 أزواج) */
-        const symbols = ['⭐', '💎', '🚀', '🔥', '👑', '🎯', '🍀', '💡', '⭐', '💎', '🚀', '🔥', '👑', '🎯', '🍀', '💡'];
+        /* 1. لعبة الذاكرة: 8 بطاقات سريعة (4 أزواج) */
+        const symbols = ['⭐', '💎', '🚀', '🔥', '⭐', '💎', '🚀', '🔥'];
         let flipped = [], matchedCount = 0;
 
         function initMemory() {
@@ -330,9 +379,9 @@
                                     flipped[0].classList.add('matched');
                                     flipped[1].classList.add('matched');
                                     matchedCount += 2;
-                                    if (matchedCount === 16) {
-                                        updatePoints(50);
-                                        alert('🎉 رائع جداً! أنهيت جميع البطاقات وربحت 50 نقطة!');
+                                    if (matchedCount === 8) {
+                                        updatePoints(20);
+                                        alert('🎉 رائع وسريع! أنهيت البطاقات بنجاح وربحت 20 نقطة!');
                                         initMemory();
                                     }
                                 } else {
@@ -342,7 +391,7 @@
                                     flipped[1].innerText = '';
                                 }
                                 flipped = [];
-                            }, 500);
+                            }, 450);
                         }
                     }
                 };
@@ -351,7 +400,7 @@
         }
         initMemory();
 
-        /* 2. لعبة النقر السريع (صيد الطاقة) */
+        /* 2. لعبة صيد البرق (النقر السريع) */
         let tapScore = 0, tapTimer, tapMove;
         function startTapGame() {
             tapScore = 0;
@@ -360,7 +409,7 @@
             document.getElementById('tapArea').style.display = 'block';
             document.getElementById('tapTimer').innerText = `الوقت: ${time} ث`;
             moveTarget();
-            tapMove = setInterval(moveTarget, 900);
+            tapMove = setInterval(moveTarget, 850);
             tapTimer = setInterval(() => {
                 time--;
                 document.getElementById('tapTimer').innerText = `الوقت: ${time} ث`;
@@ -371,7 +420,7 @@
                     document.getElementById('startTapBtn').style.display = 'block';
                     let earned = tapScore * 2;
                     updatePoints(earned);
-                    alert(`⚡ انتهى الوقت! اصطدت ${tapScore} شحنة طاقة وربحت ${earned} نقطة!`);
+                    alert(`⚡ رائع! اصطدت ${tapScore} شحنة طاقة وربحت ${earned} نقطة!`);
                 }
             }, 1000);
         }
@@ -390,7 +439,7 @@
             let win = isHigher ? nextNum >= currentNum : nextNum <= currentNum;
             if (win) {
                 updatePoints(10);
-                alert(`صح! الرقم التالي كان (${nextNum}). ربحت 10 نقاط!`);
+                alert(`إجابة صحيحة! الرقم التالي كان (${nextNum}). ربحت 10 نقاط!`);
             } else {
                 alert(`للأسف خطأ! الرقم التالي كان (${nextNum}). حاول مجدداً!`);
             }
@@ -412,14 +461,14 @@
             alert('🎉 تم استلام هدية الحضور اليومي بنجاح (+50 نقطة)!');
         }
 
-        /* عجلة الحظ مع قفل 24 ساعة وتأثير الدوران */
+        /* عجلة الحظ مع قفل 24 ساعة وتأثير الدوران الحقيقي */
         let currentRotation = 0;
         function spinWheel() {
             const lastSpin = localStorage.getItem('last_spin');
             const now = Date.now();
             if (lastSpin && now - parseInt(lastSpin) < 24 * 60 * 60 * 1000) {
                 const hoursLeft = Math.ceil((24 * 60 * 60 * 1000 - (now - parseInt(lastSpin))) / (1000 * 60 * 60));
-                alert(`⚠️ لديك تدوير واحد يومياً! عُد بعد ${hoursLeft} ساعة.`);
+                alert(`⚠️ لديك فرصة تدوير واحدة يومياً! عُد بعد ${hoursLeft} ساعة.`);
                 return;
             }
 
@@ -437,18 +486,13 @@
 
         function completeTask(pts) {
             updatePoints(pts);
-            alert(`تم تنفيذ المهمة (+${pts} نقطة)!`);
+            alert(`تم تأكيد المهمة وإضافة ${pts} نقطة!`);
         }
 
-        /* السحب بالحد الأدنى 50 ألف */
-        function requestWithdraw() {
-            const method = document.getElementById('withdrawMethod').value;
-            const info = document.getElementById('accountInfo').value.trim();
-            if (!info) return alert('يرجى إدخال معلومات الاستلام بدقة.');
-            if (userPoints < 50000) return alert('عذراً، الحد الأدنى للسحب هو 50,000 نقطة.');
-            
-            tg.sendData(JSON.stringify({action: 'withdraw', method: method, details: info}));
-            alert('✅ تم إرسال طلب السحب بنجاح، وستتم مراجعته وتحويله.');
+        /* تنبيه حالة السحب وشريط التقدم */
+        function showProgressStatus() {
+            let percent = document.getElementById('progressPercent').innerText;
+            alert(`🚀 أنت في مسار التأهيل للإطلاق التجريبي!\nنسبة إنجاز المستوى الأول لديك هي (${percent}).\nواصل جمع النقاط لفتح خيارات السحب عبر شام كاش والهرم والفؤاد فور الإطلاق!`);
         }
     </script>
 </body>
