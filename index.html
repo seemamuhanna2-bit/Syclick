@@ -9,8 +9,8 @@
     <style>
         /* ألوان متوافقة مع الوضع المظلم لتلغرام تلقائياً */
         body {
-            background-color: var(--tg-theme-bg-color, #18222d);
-            color: var(--tg-theme-text-color, #ffffff);
+            background-color: var(--tg-theme-bg-color, #0f172a);
+            color: var(--tg-theme-text-color, #f8fafc);
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
@@ -19,34 +19,34 @@
             height: 100vh;
             user-select: none;
         }
-        /* القسم العلوي (الطاقة والكابتشا) */
+        /* القسم العلوي (الرصيد والحضور اليومي) */
         .header {
             text-align: center;
             padding: 20px;
-            background-color: var(--tg-theme-secondary-bg-color, #232e3c);
-            border-bottom: 2px solid #333;
+            background-color: var(--tg-theme-secondary-bg-color, #1e293b);
+            border-bottom: 2px solid #334155;
             border-radius: 0 0 20px 20px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        .energy-box {
-            font-size: 22px;
+        .balance-box {
+            font-size: 24px;
             font-weight: bold;
-            margin-bottom: 15px;
-            color: #ffcc00;
+            margin-bottom: 10px;
+            color: #38bdf8;
         }
-        .captcha-btn {
-            background-color: #0088cc;
+        .daily-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
             color: white;
             border: none;
-            padding: 12px 20px;
+            padding: 10px 20px;
             border-radius: 12px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             cursor: pointer;
-            width: 90%;
+            width: 80%;
             transition: 0.2s;
         }
-        .captcha-btn:active { transform: scale(0.95); }
+        .daily-btn:active { transform: scale(0.95); }
         
         /* قسم المحتوى الأساسي */
         .content {
@@ -60,21 +60,28 @@
         
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* البطاقات (المهام، الأصدقاء، المحفظة) */
+        /* البطاقات */
         .card {
-            background-color: var(--tg-theme-secondary-bg-color, #232e3c);
+            background-color: var(--tg-theme-secondary-bg-color, #1e293b);
             padding: 15px;
             border-radius: 15px;
             margin-bottom: 15px;
+            border: 1px solid #334155;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .task-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border: 1px solid #333;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #334155;
         }
+        .task-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
         .card-info strong { font-size: 16px; }
-        .card-info small { color: #aaa; font-size: 13px; }
+        .card-info small { color: #94a3b8; font-size: 13px; }
         .btn-action {
-            background-color: #4caf50;
+            background-color: #0284c7;
             color: white;
             border: none;
             padding: 8px 15px;
@@ -82,32 +89,68 @@
             font-weight: bold;
             cursor: pointer;
         }
+        .btn-action:active { transform: scale(0.95); }
+
+        /* عجلة الحظ */
+        .wheel-container {
+            text-align: center;
+            padding: 15px;
+        }
+        .wheel-result {
+            margin-top: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #facc15;
+        }
+
+        /* سحب الأرباح */
+        .withdraw-select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            background-color: #334155;
+            color: white;
+            border: 1px solid #475569;
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+        .withdraw-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            background-color: #334155;
+            color: white;
+            border: 1px solid #475569;
+            margin-bottom: 15px;
+            font-size: 15px;
+            box-sizing: border-box;
+        }
 
         /* شريط التنقل السفلي */
         .navbar {
             display: flex;
             justify-content: space-around;
-            background-color: var(--tg-theme-secondary-bg-color, #232e3c);
+            background-color: var(--tg-theme-secondary-bg-color, #1e293b);
             padding: 12px 0;
             position: fixed;
             bottom: 0;
             width: 100%;
-            border-top: 1px solid #333;
+            border-top: 1px solid #334155;
             border-radius: 20px 20px 0 0;
         }
         .nav-item {
             text-align: center;
             cursor: pointer;
             font-size: 13px;
-            color: #888;
+            color: #94a3b8;
             flex: 1;
         }
         .nav-item.active {
-            color: var(--tg-theme-button-color, #0088cc);
+            color: #38bdf8;
             font-weight: bold;
         }
         .nav-icon {
-            font-size: 24px;
+            font-size: 22px;
             display: block;
             margin-bottom: 3px;
         }
@@ -115,52 +158,82 @@
 </head>
 <body>
 
-    <!-- الواجهة العلوية ثابتة: الطاقة والكابتشا -->
+    <!-- الواجهة العلوية ثابتة: الرصيد وتسجيل الحضور اليومي -->
     <div class="header">
-        <div class="energy-box">⚡ الطاقة: <span id="energy">1000</span> / 1000</div>
-        <button class="captcha-btn" onclick="sendToBot('request_captcha')">🧩 حل كابتشا (+2 💰)</button>
+        <div class="balance-box">💎 رصيدك: <span id="balance">0</span> نقطة</div>
+        <button class="daily-btn" onclick="dailyCheckIn()">📅 استلم هدية الحضور اليومي (+50)</button>
     </div>
 
-    <!-- المحتوى المتغير -->
+    <!-- المحتوى المتغير حسب الأقسام -->
     <div class="content">
         
-        <!-- صفحة المهام -->
+        <!-- صفحة المهام وعجلة الحظ -->
         <div id="tasks" class="tab-content active">
-            <h3 style="margin-top:0;">🎮 مهام العملاء</h3>
             
-            <div class="card">
-                <div class="card-info">
-                    <strong>الانضمام لقناة SyClick</strong><br>
-                    <small>المكافأة: +50 💰</small>
-                </div>
-                <button class="btn-action" onclick="sendToBot('join_channel')">تنفيذ</button>
+            <!-- عجلة الحظ -->
+            <div class="card wheel-container">
+                <h3 style="margin-top:0; color: #facc15;">🎡 عجلة الحظ اليومية</h3>
+                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 12px;">جرب حظك واربح نقاطاً مجانية كل 24 ساعة!</p>
+                <button class="btn-action" style="background: linear-gradient(135deg, #f59e0b, #d97706); width: 100%; padding: 12px;" onclick="spinWheel()">تدوير العجلة الآن</button>
+                <div class="wheel-result" id="wheelResult"></div>
             </div>
 
+            <!-- مهام السوشيال ميديا والتفاعل -->
             <div class="card">
-                <div class="card-info">
-                    <strong>تقييم تطبيق (قريباً)</strong><br>
-                    <small>المكافأة: +100 💰</small>
+                <h3 style="margin-top:0; margin-bottom: 15px;">🎮 مهام التفاعل والدعم</h3>
+                
+                <div class="task-item">
+                    <div class="card-info">
+                        <strong>الانضمام لقناة التليجرام</strong><br>
+                        <small>المكافأة: +20 نقطة</small>
+                    </div>
+                    <button class="btn-action" onclick="completeTask(20, 'telegram')">تنفيذ</button>
                 </div>
-                <button class="btn-action" style="background-color:gray;">قريباً</button>
+
+                <div class="task-item">
+                    <div class="card-info">
+                        <strong>متابعة صفحة الفيسبوك</strong><br>
+                        <small>المكافأة: +20 نقطة</small>
+                    </div>
+                    <button class="btn-action" onclick="completeTask(20, 'facebook')">تنفيذ</button>
+                </div>
+
+                <div class="task-item">
+                    <div class="card-info">
+                        <strong>متابعة حساب الإنستغرام</strong><br>
+                        <small>المكافأة: +20 نقطة</small>
+                    </div>
+                    <button class="btn-action" onclick="completeTask(20, 'instagram')">تنفيذ</button>
+                </div>
             </div>
         </div>
 
-        <!-- صفحة الأصدقاء -->
+        <!-- صفحة الأصدقاء (الإحالة) -->
         <div id="friends" class="tab-content">
-            <h3 style="margin-top:0;">👥 نظام الإحالة الآمن</h3>
-            <div class="card" style="flex-direction: column; text-align:center;">
-                <p style="font-size: 14px; color: #ccc;">احصل على مكافأة لكل 5 أصدقاء ينضمون ويتفاعلون حقيقياً (لضمان منع الحسابات الوهمية).</p>
-                <button class="captcha-btn" style="background-color: #ff9800; width: 100%; margin-top:10px;" onclick="sendToBot('invite')">🔗 نسخ رابط الدعوة</button>
+            <h3 style="margin-top:0;">👥 نظام الإحالة</h3>
+            <div class="card" style="text-align:center; padding: 25px 15px;">
+                <p style="font-size: 14px; color: #cbd5e1; margin-bottom: 15px;">ادعُ أصدقاءك واحصل على 50 نقطة لكل صديق ينضم عبر رابطك!</p>
+                <button class="btn-action" style="background-color: #f59e0b; width: 100%; padding: 12px;" onclick="sendToBot('invite')">🔗 نسخ رابط الدعوة الخاص بك</button>
             </div>
         </div>
 
-        <!-- صفحة المحفظة -->
+        <!-- صفحة المحفظة وسحب الأرباح المحلية -->
         <div id="wallet" class="tab-content">
-            <h3 style="margin-top:0;">💰 محفظتي</h3>
-            <div class="card" style="flex-direction: column; text-align:center; padding: 30px 15px;">
-                <h2 style="margin: 0; color: #4caf50;">الرصيد: <span id="balance">0</span> 💰</h2>
-                <p style="color: #aaa; font-size: 13px;">الحد الأدنى للسحب: 65,000 💰</p>
-                <button class="btn-action" style="width:100%; margin-top: 15px; padding: 12px;" onclick="sendToBot('withdraw')">طلب سحب الرصيد</button>
+            <h3 style="margin-top:0;">💰 محفظة السحب</h3>
+            <div class="card">
+                <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">الحد الأدنى للسحب: 10,000 نقطة</p>
+                
+                <label style="font-size: 14px; display: block; margin-bottom: 5px;">اختر طريقة السحب:</label>
+                <select class="withdraw-select" id="withdrawMethod">
+                    <option value="sham_cash">شام كاش (Sham Cash)</option>
+                    <option value="haram">شركة الهرم للحوالات</option>
+                    <option value="fouad">شركة الفؤاد للحوالات</option>
+                </select>
+
+                <label style="font-size: 14px; display: block; margin-bottom: 5px;">رقم الحساب / الاسم الثلاثي ورقم الهوية:</label>
+                <input type="text" class="withdraw-input" id="accountInfo" placeholder="أدخل معلومات الاستلام بدقة...">
+
+                <button class="btn-action" style="width:100%; padding: 12px; background-color: #10b981;" onclick="requestWithdraw()">طلب سحب الأرباح</button>
             </div>
         </div>
 
@@ -182,27 +255,72 @@
         </div>
     </div>
 
-    <!-- سكربت التشغيل والتنقل -->
+    <!-- سكربت التشغيل وتحديث النقاط -->
     <script>
-        // تهيئة واجهة تلغرام
         let tg = window.Telegram.WebApp;
-        tg.expand(); // لجعل التطبيق يملأ الشاشة
+        tg.expand(); 
 
-        // دالة التنقل بين الصفحات
+        let userPoints = 150; // رصيد تجريبي مبدئي
+        updateBalanceDisplay();
+
+        function updateBalanceDisplay() {
+            document.getElementById('balance').innerText = userPoints;
+        }
+
+        // دالة التنقل بين التبويبات
         function switchTab(tabId, element) {
-            // إخفاء كل المحتوى
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            // إزالة اللون الأزرق من كل الأزرار السفلية
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
             
-            // إظهار المحتوى المطلوب وتلوين الزر الخاص به
             document.getElementById(tabId).classList.add('active');
             element.classList.add('active');
         }
 
-        // دالة التواصل مع البوت
+        // عجلة الحظ
+        function spinWheel() {
+            const prizes = [10, 25, 50, 100, 200];
+            const won = prizes[Math.floor(Math.random() * prizes.length)];
+            userPoints += won;
+            updateBalanceDisplay();
+            document.getElementById('wheelResult').innerText = `🎉 مبروك! ربحتِ ${won} نقطة!`;
+        }
+
+        // الحضور اليومي
+        function dailyCheckIn() {
+            userPoints += 50;
+            updateBalanceDisplay();
+            alert('تم استلام هدية الحضور اليومي بنجاح (+50 نقطة)!');
+        }
+
+        // تنفيذ المهام
+        function completeTask(reward, taskName) {
+            userPoints += reward;
+            updateBalanceDisplay();
+            alert(`أحسنتِ! تم إنجاز المهمة وإضافة ${reward} نقطة لرصيدكِ.`);
+            // هنا يمكنك إرسال البيانات للبوت إذا أردتِ عبر: tg.sendData('task_' + taskName);
+        }
+
+        // طلب السحب
+        function requestWithdraw() {
+            let method = document.getElementById('withdrawMethod').value;
+            let info = document.getElementById('accountInfo').value;
+            
+            if (!info.trim()) {
+                alert('الرجاء إدخال معلومات الاستلام بشكل صحيح.');
+                return;
+            }
+
+            if (userPoints < 10000) {
+                alert('عذراً، رصيدك أقل من الحد الأدنى للسحب (10,000 نقطة).');
+                return;
+            }
+
+            alert(`تم إرسال طلب السحب بنجاح عبر (${method}) وسيتم مراجعته وتحويله قريباً!`);
+            // إرسال البيانات للبوت الرئيسي
+            tg.sendData(JSON.stringify({action: 'withdraw', method: method, details: info}));
+        }
+
         function sendToBot(action) {
-            // تقوم بإرسال الأمر للبوت عند ضغط المستخدم على أي زر في الواجهة
             tg.sendData(action);
         }
     </script>
