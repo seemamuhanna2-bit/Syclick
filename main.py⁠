@@ -5,17 +5,16 @@ from threading import Thread
 import telebot
 from telebot import types
 
-# دعم كل من SQLite محلياً و PostgreSQL سحابياً لضمان حفظ البيانات
+# دعم كل من SQLite محلياً و PostgreSQL سحابياً
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL:
     import psycopg2
 
-# خادم الويب لإبقاء البوت نشطاً على Render
 app = Flask('')
 
 @app.route('/')
 def home():
-    return "SyClick Bot is Active!"
+    return "SyClick Bot is Active and Secured!"
 
 def run_web():
     port = int(os.environ.get('PORT', 10000))
@@ -33,7 +32,6 @@ ADMIN_CHAT_ID = int(os.environ.get("ADMIN_CHAT_ID", 0))
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# دالة فتح الاتصال بقاعدة البيانات المناسبة
 def get_db_connection():
     if DATABASE_URL:
         db_url = DATABASE_URL
@@ -44,7 +42,6 @@ def get_db_connection():
         import sqlite3
         return sqlite3.connect('database.db')
 
-# تجهيز جداول قاعدة البيانات
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -69,6 +66,11 @@ def init_db():
                 status TEXT DEFAULT 'pending'
             )
         ''')
+        # إضافة عمود حماية القناة بدون حذف البيانات الحالية
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN channel_joined BOOLEAN DEFAULT FALSE")
+        except Exception:
+            conn.rollback() # العمود موجود مسبقاً
     else:
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
@@ -89,7 +91,11 @@ def init_db():
                 status TEXT DEFAULT 'pending'
             )
         ''')
-        
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN channel_joined BOOLEAN DEFAULT 0")
+        except Exception:
+            pass
+
     conn.commit()
     cursor.close()
     conn.close()
@@ -100,12 +106,12 @@ def get_user(user_id, username=""):
     conn = get_db_connection()
     cursor = conn.cursor()
     param = "%s" if DATABASE_URL else "?"
-    cursor.execute(f"SELECT points FROM users WHERE user_id = {param}", (user_id,))
+    cursor.execute(f"SELECT points, referrer_id FROM users WHERE user_id = {param}", (user_id,))
     row = cursor.fetchone()
     if not row:
         cursor.execute(f"INSERT INTO users (user_id, username, points) VALUES ({param}, {param}, 0)", (user_id, username))
         conn.commit()
-        row = (0,)
+        row = (0, 0)
     cursor.close()
     conn.close()
     return row
@@ -119,7 +125,6 @@ def update_user_balance(user_id, points_delta=0):
     cursor.close()
     conn.close()
 
-# لوحة مفاتيح تشغيل التطبيق المصغر
 def main_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
     webapp_url = "https://seemamuhanna2-bit.github.io/Syclick/"
@@ -127,7 +132,6 @@ def main_keyboard():
     markup.add(btn_webapp)
     return markup
 
-# أمر البدء ونظام دعوة الأصدقاء (Referral System)
 @bot.message_handler(commands=['start'])
 def start_cmd(message):
     user_id = message.chat.id
@@ -146,13 +150,8 @@ def start_cmd(message):
     row = cursor.fetchone()
     
     if not row:
-        if referrer_id != 0 and referrer_id != user_id:
-            cursor.execute(f"UPDATE users SET points = points + 10 WHERE user_id = {param}", (referrer_id,))
-            try:
-                bot.send_message(referrer_id, "🎉 **مبروك!** انضم صديق جديد عبر رابطك وحصلت على **10 نقاط** إضافية.", parse_mode="Markdown")
-            except Exception:
-                pass
-        else:
+        # تسجيل المستخدم مع حفظ كود الإحالة بدون إعطاء نقاط حالياً
+        if referrer_id == user_id:
             referrer_id = 0
             
         cursor.execute(f"INSERT INTO users (user_id, username, points, referrer_id) VALUES ({param}, {param}, 0, {param})", (user_id, username, referrer_id))
@@ -160,14 +159,10 @@ def start_cmd(message):
         points = 0
     else:
         points = row[0]
+        # إذا كان المستخدم قديماً ودخل من رابط ولم يكن لديه مُحيل مسبق
         if referrer_id != 0 and referrer_id != user_id and (row[1] == 0 or row[1] is None):
             cursor.execute(f"UPDATE users SET referrer_id = {param} WHERE user_id = {param}", (referrer_id, user_id))
-            cursor.execute(f"UPDATE users SET points = points + 10 WHERE user_id = {param}", (referrer_id,))
             conn.commit()
-            try:
-                bot.send_message(referrer_id, "🎉 **مبروك!** انضم صديق جديد عبر رابطك وحصلت على **10 نقاط** إضافية.", parse_mode="Markdown")
-            except Exception:
-                pass
                 
     cursor.close()
     conn.close()
@@ -180,7 +175,6 @@ def start_cmd(message):
     )
     bot.send_message(user_id, text, reply_markup=main_keyboard(), parse_mode="Markdown")
 
-# ================= لوحة تحكم المشرف (Admin Panel) =================
 @bot.message_handler(commands=['admin', 'stats'])
 def admin_cmd(message):
     if message.chat.id != ADMIN_CHAT_ID:
@@ -188,16 +182,12 @@ def admin_cmd(message):
 
     conn = get_db_connection()
     cursor = conn.cursor()
-
     cursor.execute("SELECT COUNT(*), COALESCE(SUM(points), 0) FROM users")
     total_users, total_points = cursor.fetchone()
-
     cursor.execute("SELECT user_id, username, points FROM users ORDER BY points DESC LIMIT 5")
     top_players = cursor.fetchall()
-
     cursor.execute("SELECT COUNT(*) FROM withdraw_requests WHERE status = 'pending'")
     pending_withdrawals = cursor.fetchone()[0]
-
     cursor.close()
     conn.close()
 
@@ -216,7 +206,6 @@ def admin_cmd(message):
     report += "\n_💡 أرسل أمر /users لعرض كل المستخدمين بالتفصيل._"
     bot.send_message(message.chat.id, report, parse_mode="Markdown")
 
-# استعراض جميع المستخدمين للمشرف
 @bot.message_handler(commands=['users'])
 def admin_users_cmd(message):
     if message.chat.id != ADMIN_CHAT_ID:
@@ -245,17 +234,13 @@ def admin_users_cmd(message):
 
     if report:
         bot.send_message(message.chat.id, report, parse_mode="Markdown")
-# ==================================================================
 
-# استقبال البيانات والأوامر من التطبيق المصغر (Mini App)
 @bot.message_handler(content_types=['web_app_data'])
 def handle_web_app_data(message):
     data_str = message.web_app_data.data
     user_id = message.from_user.id
     username = message.from_user.username or message.from_user.first_name or "بدون اسم"
-    user_data = get_user(user_id, username)
-    current_points = user_data[0]
-
+    
     try:
         data = json.loads(data_str)
     except Exception:
@@ -263,25 +248,72 @@ def handle_web_app_data(message):
 
     action = data.get("action")
 
-    # 1. التحقق من الانضمام للقناة وإعطاء 10 نقاط
+    # 1. الانضمام للقناة مع سد ثغرة التكرار
     if action == 'verify_channel':
-        try:
-            member = bot.get_chat_member(CHANNEL_USERNAME, user_id)
-            if member.status in ['member', 'administrator', 'creator']:
-                update_user_balance(user_id, 10)
-                bot.send_message(user_id, "✅ **تم التحقق!** شكراً لانضمامك للقناة، تمت إضافة **10 نقاط** لرصيدك.", parse_mode="Markdown")
-            else:
-                bot.send_message(user_id, f"❌ **لم تقم بالانضمام بعد!** يرجى الانضمام للقناة أولاً:\n{CHANNEL_USERNAME}", parse_mode="Markdown")
-        except Exception as e:
-            bot.send_message(user_id, f"⚠️ **عذراً:** يرجى التأكد من انضمامك للقناة أولاً {CHANNEL_USERNAME} \n(تأكد أيضاً من رفع البوت كأدمن في القناة ليعمل الفحص)", parse_mode="Markdown")
-
-    # 2. حفظ النقاط والتقدم القادم من الـ Mini App مباشرة
-    elif action == 'save_points':
-        new_points = data.get("points", 0)
         conn = get_db_connection()
         cursor = conn.cursor()
         param = "%s" if DATABASE_URL else "?"
+        
+        cursor.execute(f"SELECT channel_joined FROM users WHERE user_id = {param}", (user_id,))
+        row = cursor.fetchone()
+        
+        # إذا لم يكن مسجلاً، نقوم بإنشاء سجل له
+        if not row:
+            cursor.execute(f"INSERT INTO users (user_id, username, points) VALUES ({param}, {param}, 0)", (user_id, username))
+            conn.commit()
+            already_joined = False
+        else:
+            already_joined = row[0]
+            
+        if already_joined:
+            bot.send_message(user_id, "⚠️ **لقد حصلت على مكافأة الانضمام للقناة مسبقاً!**")
+        else:
+            try:
+                member = bot.get_chat_member(CHANNEL_USERNAME, user_id)
+                if member.status in ['member', 'administrator', 'creator']:
+                    cursor.execute(f"UPDATE users SET points = points + 10, channel_joined = TRUE WHERE user_id = {param}", (user_id,))
+                    conn.commit()
+                    bot.send_message(user_id, "✅ **تم التحقق!** شكراً لانضمامك للقناة، تمت إضافة **10 نقاط** لرصيدك.", parse_mode="Markdown")
+                else:
+                    bot.send_message(user_id, f"❌ **لم تقم بالانضمام بعد!** يرجى الانضمام للقناة أولاً:\n{CHANNEL_USERNAME}", parse_mode="Markdown")
+            except Exception as e:
+                bot.send_message(user_id, f"⚠️ **عذراً:** يرجى التأكد من انضمامك للقناة أولاً {CHANNEL_USERNAME} \n(تأكد أيضاً من رفع البوت كأدمن في القناة)", parse_mode="Markdown")
+        
+        cursor.close()
+        conn.close()
+
+    # 2. حفظ النقاط ومعالجة نظام الإحالة الآمن
+    elif action == 'save_points':
+        new_points = data.get("points", 0)
+        
+        # حماية من الأرقام الخيالية (أكثر من 150 ألف نقطة تعتبر تلاعباً)
+        if new_points < 0 or new_points > 150000:
+            bot.send_message(user_id, "❌ خطأ في مزامنة البيانات، يرجى المحاولة لاحقاً.")
+            return
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        param = "%s" if DATABASE_URL else "?"
+        
+        # تحديث رصيد اللاعب
         cursor.execute(f"UPDATE users SET points = {param} WHERE user_id = {param}", (new_points, user_id))
+        
+        # فحص الإحالة: هل تجاوز 100 نقطة ولديه مُحيل؟
+        cursor.execute(f"SELECT referrer_id FROM users WHERE user_id = {param}", (user_id,))
+        referrer_row = cursor.fetchone()
+        
+        if referrer_row and referrer_row[0] != 0:
+            referrer_id = referrer_row[0]
+            if new_points >= 100:
+                # إعطاء الجائزة للمُحيل
+                cursor.execute(f"UPDATE users SET points = points + 100 WHERE user_id = {param}", (referrer_id,))
+                # مسح الإحالة لسد الثغرة
+                cursor.execute(f"UPDATE users SET referrer_id = 0 WHERE user_id = {param}", (user_id,))
+                try:
+                    bot.send_message(referrer_id, f"🎉 **مبروك!** صديقك الذي دعوته أتم 100 نقطة، وحصلت أنت على **100 نقطة** مكافأة الإحالة!", parse_mode="Markdown")
+                except Exception:
+                    pass
+
         conn.commit()
         cursor.close()
         conn.close()
@@ -289,6 +321,9 @@ def handle_web_app_data(message):
 
     # 3. معالجة طلب سحب الأرباح
     elif action == 'withdraw':
+        user_data = get_user(user_id, username)
+        current_points = user_data[0]
+        
         method_names = {
             "sham_cash": "شام كاش",
             "haram": "شركة الهرم",
@@ -332,17 +367,6 @@ def handle_web_app_data(message):
                     pass
         else:
             bot.send_message(user_id, f"❌ رصيدك الحالي في السيرفر ({current_points:,} نقطة) أقل من الحد الأدنى المطلوب للتأهيل (50,000 نقطة).")
-
-    # 4. إرسال رابط الدعوة عند الطلب
-    elif action == 'invite':
-        bot_info = bot.get_me()
-        bot.send_message(
-            user_id,
-            f"🔗 **رابط الدعوة الخاص بك:**\n"
-            f"https://t.me/{bot_info.username}?start={user_id}\n\n"
-            "🎁 شارك هذا الرابط مع أصدقائك!\n"
-            "ستحصل على **10 نقاط** عن كل صديق ينضم عبر رابطك."
-        )
 
 if __name__ == '__main__':
     keep_alive()
