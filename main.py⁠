@@ -24,6 +24,10 @@ def keep_alive():
 # ================= الإعدادات =================
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 CHANNEL_USERNAME = "@Syclickchannel"
+
+# ضعي رقم الآيدي الخاص بكِ هنا بين الرقمين (بدون إشارات تنصيص)
+# يمكنكِ جلبه من بوت @userinfobot
+ADMIN_CHAT_ID = 000000000  
 # ============================================
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -73,7 +77,7 @@ def update_user_balance(user_id, points_delta=0):
     conn.commit()
     conn.close()
 
-# لوحة مفاتيح فتح التطبيق المصغر
+# لوحة مفاتيح تشغيل التطبيق المصغر
 def main_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
     webapp_url = "https://seemamuhanna2-bit.github.io/Syclick/"
@@ -87,13 +91,13 @@ def start_cmd(message):
     user = get_user(user_id)
     text = (
         "🚀 **أهلاً بك في منصة SyClick** 🚀\n\n"
-        "منصتك الموثوقة لتنفيذ المهام وتجميع الأرباح والسحب محلياً.\n\n"
-        f"💎 رصيدك الحالي: **{user[0]}** نقطة\n\n"
-        "اضغط على الزر أدناه لفتح المنصة، تدوير عجلة الحظ، وتنفيذ المهام 👇"
+        "المنصة التفاعلية للألعاب وتنفيذ المهام وجمع النقاط والسحب محلياً.\n\n"
+        f"💎 رصيدك الحالي: **{user[0]:,}** نقطة\n\n"
+        "اضغط على الزر أدناه لفتح المنصة والبدء باللعب 👇"
     )
     bot.send_message(user_id, text, reply_markup=main_keyboard(), parse_mode="Markdown")
 
-# استقبال البيانات من تطبيق الويب المصغر (Mini App)
+# استقبال البيانات والأوامر من التطبيق المصغر (Mini App)
 @bot.message_handler(content_types=['web_app_data'])
 def handle_web_app_data(message):
     data_str = message.web_app_data.data
@@ -101,7 +105,6 @@ def handle_web_app_data(message):
     user_data = get_user(user_id)
     points = user_data[0]
 
-    # محاولة قراءة البيانات بصيغة JSON لعمليات السحب المعقدة
     try:
         data = json.loads(data_str)
     except Exception:
@@ -109,6 +112,7 @@ def handle_web_app_data(message):
 
     action = data.get("action")
 
+    # معالجة طلب سحب الأرباح (الحد الأدنى 50 ألف نقطة)
     if action == 'withdraw':
         method_names = {
             "sham_cash": "شام كاش",
@@ -118,36 +122,57 @@ def handle_web_app_data(message):
         method = method_names.get(data.get("method"), data.get("method", "محلي"))
         details = data.get("details", "لا توجد تفاصيل")
 
-        if points >= 10000:
+        if points >= 50000:
             conn = sqlite3.connect('database.db')
             cursor = conn.cursor()
-            # تسجيل طلب السحب وخصم النقاط
             cursor.execute("INSERT INTO withdraw_requests (user_id, amount, method, details) VALUES (?, ?, ?, ?)",
                            (user_id, points, method, details))
             cursor.execute("UPDATE users SET points = 0 WHERE user_id = ?", (user_id,))
             conn.commit()
             conn.close()
 
+            # إشعار للمستخدم بتأكيد استلام طلبه
             bot.send_message(
                 user_id,
                 f"✅ **تم تسجيل طلب السحب بنجاح!**\n\n"
-                f"💰 المبلغ: {points} نقطة\n"
-                f"🏦 الوسيلة: {method}\n"
-                f"📝 البيانات: `{details}`\n\n"
-                "سيتم مراجعة الطلب وتحويل المبلغ قريباً عبر الإشراف المباشر.",
+                f"💰 المبلغ المسحوب: {points:,} نقطة\n"
+                f"🏦 وسيلة الاستلام: {method}\n"
+                f"📝 البيانات المسجلة: `{details}`\n\n"
+                "سيتم مراجعة الطلب وتحويل المبلغ خلال وقت قصير.",
                 parse_mode="Markdown"
             )
-        else:
-            bot.send_message(user_id, f"❌ رصيدك الحالي ({points} نقطة) أقل من الحد الأدنى للسحب (10,000 نقطة).")
 
+            # إشعار مباشر يصل إلى حسابكِ الشخصي فوراً
+            if ADMIN_CHAT_ID != 0:
+                try:
+                    admin_text = (
+                        "🚨 **طلب سحب جديد في SyClick!**\n\n"
+                        f"👤 آيدي المستخدم: `{user_id}`\n"
+                        f"💰 المبلغ: {points:,} نقطة\n"
+                        f"🏦 وسيلة السحب: {method}\n"
+                        f"📋 بيانات التحويل: `{details}`"
+                    )
+                    bot.send_message(ADMIN_CHAT_ID, admin_text, parse_mode="Markdown")
+                except Exception as e:
+                    print("تنبيه: لم يتمكن البوت من مراسلة المشرف:", e)
+        else:
+            bot.send_message(user_id, f"❌ رصيدك الحالي ({points:,} نقطة) أقل من الحد الأدنى للسحب (50,000 نقطة).")
+
+    # نسخ رابط الدعوة
     elif action == 'invite':
         bot_info = bot.get_me()
         bot.send_message(
             user_id,
             f"🔗 **رابط الدعوة الخاص بك:**\n"
             f"https://t.me/{bot_info.username}?start={user_id}\n\n"
-            "انسخ الرابط وشاركه؛ ستحصل على مكافأة فورية عند انضمام وتفاعل أصدقائك!"
+            "شارك هذا الرابط مع أصدقائك؛ ستحصل على مكافأة لكل مستخدم ينضم ويتفاعل عبرك!"
         )
+# كشف الآيدي عند إرسال أي رسالة
+@bot.message_handler(func=lambda message: True)
+def echo_all(message):
+    user_id = message.chat.id
+    print(f"====== MY_CHAT_ID: {user_id} ======")
+    bot.reply_to(message, f"رقم الآيدي الخاص بك هو:\n`{user_id}`", parse_mode="Markdown")
 
 if __name__ == '__main__':
     keep_alive()
