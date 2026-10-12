@@ -251,19 +251,20 @@
             </div>
 
             <div class="card">
-                <h3 style="margin-bottom: 10px;">🔗 مهام الدعم والتفاعل</h3>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                    <span>قناة التليجرام (+20)</span>
-                    <button class="daily-btn" onclick="completeTask(20)">انضمام</button>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                    <span>صفحة الفيسبوك (+20)</span>
-                    <button class="daily-btn" onclick="completeTask(20)">متابعة</button>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                    <span>حساب الإنستغرام (+20)</span>
-                    <button class="daily-btn" onclick="completeTask(20)">متابعة</button>
-                </div>
+  <h3 style="margin-bottom: 10px;">🔗 مهام الدعم والتفاعل</h3>
+  
+  <!-- 1. قناة التلغرام -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <span>قناة التليجرام (20+)</span>
+    <button id="btn-telegram" class="daily-btn" onclick="doTelegramTask()">انضمام</button>
+  </div>
+
+  <!-- 2. دعوة 5 أصدقاء -->
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <span>دعوة 5 أصدقاء (50+)</span>
+    <button id="btn-invite" class="daily-btn" onclick="doInviteTask()">مشاركة الرابط</button>
+  </div>
+
             </div>
         </div>
 
@@ -324,7 +325,7 @@
         </div>
     </div>
 
-    <script>
+     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
 
@@ -338,8 +339,7 @@
             updateProgressBar();
         }
 
-
-                function updateProgressBar() {
+        function updateProgressBar() {
             const targetPoints = 6000;
             let percent = Math.min(Math.floor((userPoints / targetPoints) * 100), 98);
             if (userPoints > 0 && percent < 3) percent = 3;
@@ -347,13 +347,57 @@
             document.getElementById('progressBarFill').style.width = percent + '%';
         }
 
-
         function switchTab(tabId, el) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             el.classList.add('active');
         }
+
+        /* ================= مهام الدعم والتفاعل والقفل ================= */
+        const TELEGRAM_CHANNEL_URL = "https://t.me/Syclickchannel";
+
+        // فحص حالة المهام عند تحميل الصفحة وقفل المنتهي منها فوراً
+        window.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('task_telegram_done') === 'true') {
+                lockButton('btn-telegram', 'تم الانضمام ✅');
+            }
+        });
+
+        function lockButton(btnId, text) {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                btn.innerText = text;
+                btn.disabled = true;
+                btn.style.backgroundColor = "#555";
+                btn.style.cursor = "not-allowed";
+                btn.style.opacity = "0.7";
+            }
+        }
+
+        // مهمة الانضمام لقناة التلغرام (+20 نقطة)
+        function doTelegramTask() {
+            window.open(TELEGRAM_CHANNEL_URL, '_blank');
+            
+            // إرسال إشعار للبوت ليفحص الاشتراك عبر السيرفر
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.sendData(JSON.stringify({ action: "check_telegram_sub" }));
+            }
+            
+            localStorage.setItem('task_telegram_done', 'true');
+            lockButton('btn-telegram', 'تم الانضمام ✅');
+            updatePoints(20);
+            alert('🎉 تم فتح القناة! تأكد من اشتراكك، وتمت إضافة 20 نقطة لرصيدك.');
+        }
+
+        // مهمة دعوة الأصدقاء (+50 نقطة)
+        function doInviteTask() {
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.sendData(JSON.stringify({ action: "invite" }));
+                alert('🚀 أرسل لك البوت رابط الدعوة الخاص بك في المحادثة! شاركه مع 5 أصدقاء.');
+            }
+        }
+        /* ============================================================== */
 
         /* 1. لعبة الذاكرة: 8 بطاقات سريعة (4 أزواج) */
         const symbols = ['⭐', '💎', '🚀', '🔥', '⭐', '💎', '🚀', '🔥'];
