@@ -17,7 +17,7 @@
             user-select: none;
         }
 
-        /* الهيدر العلوي */
+        /* الهيدر العلوي (مع النقاط والطاقة) */
         .header {
             text-align: center;
             padding: 15px;
@@ -29,7 +29,13 @@
             font-size: 22px;
             font-weight: bold;
             color: #38bdf8;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
+        }
+        .energy-box {
+            font-size: 16px;
+            color: #facc15;
+            margin-bottom: 10px;
+            font-weight: bold;
         }
         .daily-btn {
             background: linear-gradient(135deg, #10b981, #059669);
@@ -72,7 +78,7 @@
         }
         .btn-action:active { transform: scale(0.97); }
 
-        /* الألعاب والعناصر البصرية الأخرى */
+        /* لعبة الذاكرة */
         .memory-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -94,29 +100,34 @@
         .memory-card.flipped { background-color: #0284c7; border-color: #38bdf8; }
         .memory-card.matched { background-color: #10b981; border-color: #34d399; pointer-events: none; }
 
-        .tap-area {
-            position: relative;
-            height: 160px;
-            background-color: #1e293b;
-            border: 2px dashed #475569;
-            border-radius: 12px;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-        .tap-target {
-            position: absolute;
-            width: 45px;
-            height: 45px;
-            background-color: #f59e0b;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
+        /* زر شحن الطاقة العملاق */
+        #energyClicker {
+            font-size: 60px;
             cursor: pointer;
-            box-shadow: 0 0 10px #f59e0b;
+            user-select: none;
+            display: inline-block;
+            background: #0f172a;
+            padding: 20px;
+            border-radius: 50%;
+            border: 3px solid #facc15;
+            box-shadow: 0 0 20px rgba(250, 204, 21, 0.4);
+            transition: transform 0.1s;
         }
+        #energyClicker:active { transform: scale(0.9); box-shadow: 0 0 5px rgba(250, 204, 21, 0.8); }
 
+        /* لعبة صناديق الحظ */
+        .box {
+            font-size: 40px;
+            cursor: pointer;
+            background: #334155;
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: 2px solid #475569;
+            transition: 0.2s;
+        }
+        .box:active { transform: scale(0.9); }
+
+        /* عجلة الحظ */
         .wheel-wrapper {
             position: relative;
             width: 170px;
@@ -151,6 +162,7 @@
             z-index: 10;
         }
 
+        /* شريط المحفظة */
         .progress-box {
             background-color: #0f172a;
             border-radius: 10px;
@@ -173,6 +185,7 @@
             transition: width 0.5s ease-in-out;
         }
 
+        /* شريط التنقل السفلي */
         .navbar {
             display: flex;
             justify-content: space-around;
@@ -193,42 +206,45 @@
 
     <div class="header">
         <div class="balance-box">💎 رصيدك: <span id="balance">0</span> نقطة</div>
+        <div class="energy-box">⚡ الطاقة: <span id="energy">1000</span> / 1000</div>
         <button class="daily-btn" onclick="dailyCheckIn()">📅 استلام الحضور اليومي (+50)</button>
     </div>
 
     <div class="content">
         <div id="games" class="tab-content active">
+            
+            <!-- زر شحن الطاقة (النقر) -->
+            <div class="card" style="text-align: center;">
+                <h3 style="color: #f59e0b; margin-bottom: 5px;">🔋 شحن الطاقة</h3>
+                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">انقر على الزر لتعبئة خزان الطاقة (كل نقرة +5 طاقة)</p>
+                <div id="energyClicker" onclick="chargeEnergy()">⚡</div>
+            </div>
+
+            <!-- لعبة صناديق الحظ (بديلة للأرقام) -->
+            <div class="card" style="text-align: center;">
+                <h3 style="color: #ec4899; margin-bottom: 5px;">🎁 صناديق الحظ (50 طاقة)</h3>
+                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;">صندوق واحد فقط يحتوي على الماسة! (الجائزة: 20 نقطة)</p>
+                <div style="display: flex; justify-content: space-around; margin-top: 15px;" id="boxesContainer">
+                    <div class="box" onclick="openBox(0)">📦</div>
+                    <div class="box" onclick="openBox(1)">📦</div>
+                    <div class="box" onclick="openBox(2)">📦</div>
+                    <div class="box" onclick="openBox(3)">📦</div>
+                </div>
+            </div>
+
+            <!-- لعبة الذاكرة -->
             <div class="card">
-                <h3 style="margin: 0; color: #38bdf8;">🧠 تحدي الذاكرة السريعة</h3>
-                <p style="font-size: 13px; color: #94a3b8; margin: 4px 0 8px 0;">اطابق كل زوجين متماثلين لتربح 20 نقطة فوراً!</p>
+                <h3 style="margin: 0; color: #38bdf8;">🧠 تحدي الذاكرة (50 طاقة)</h3>
+                <p style="font-size: 13px; color: #94a3b8; margin: 4px 0 8px 0;">طابق كل زوجين متماثلين لتربح 20 نقطة فوراً!</p>
                 <div class="memory-grid" id="memoryGrid"></div>
             </div>
 
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="margin: 0; color: #f59e0b;">⚡ تحدي صيد الطاقة</h3>
-                    <span id="tapTimer" style="font-size: 14px; font-weight: bold; color: #facc15;">الوقت: 15 ث</span>
-                </div>
-                <p style="font-size: 13px; color: #94a3b8; margin: 4px 0 8px 0;">اضغط على شحنات البرق بأقصى سرعة قبل انتهاء الوقت!</p>
-                <button class="btn-action" id="startTapBtn" onclick="startTapGame()" style="background-color: #f59e0b;">بدء الجولة</button>
-                <div class="tap-area" id="tapArea" style="display: none;">
-                    <div class="tap-target" id="tapTarget" onclick="hitTarget()">⚡</div>
-                </div>
-            </div>
-
-            <div class="card" style="text-align: center;">
-                <h3 style="color: #ec4899; margin-bottom: 5px;">🔢 لعبة تخمين الرقم</h3>
-                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;">الرقم الحالي: <strong id="currentNum" style="font-size: 20px; color: #fff;">50</strong></p>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn-action" style="background-color: #10b981;" onclick="guessNext(true)">🔼 التالي أكبر</button>
-                    <button class="btn-action" style="background-color: #ef4444;" onclick="guessNext(false)">🔽 التالي أصغر</button>
-                </div>
-            </div>
         </div>
 
         <div id="tasks" class="tab-content">
             <div class="card" style="text-align: center;">
-                <h3 style="color: #facc15;">🎡 عجلة الحظ اليومية</h3>
+                <h3 style="color: #facc15;">🎡 عجلة الحظ (70 طاقة)</h3>
+                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;">لك فرصة تدوير واحدة كل 24 ساعة!</p>
                 <div class="wheel-wrapper">
                     <div class="wheel-pointer"></div>
                     <div class="wheel-circle" id="wheelCircle"></div>
@@ -237,18 +253,18 @@
                 <div id="wheelResult" style="margin-top: 10px; font-weight: bold; color: #facc15;"></div>
             </div>
 
-            <!-- مهام الدعم والتفاعل بخلفية واضحة جداً -->
+            <!-- مهام الدعم والتفاعل بخلفية واضحة جداً ونص الإحالة الجديد -->
             <div class="card" style="background-color: #0f172a; border: 1px solid #38bdf8;">
               <h3 style="margin-bottom: 15px; color: #ffffff;">🔗 مهام الدعم والتفاعل</h3>
               
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: rgba(56, 189, 248, 0.1); padding: 10px; border-radius: 8px;">
-                <span style="color: #ffffff; font-weight: bold;">قناة التليجرام (10+)</span>
+                <span style="color: #ffffff; font-weight: bold; font-size: 14px;">قناة التليجرام (10+)</span>
                 <button id="btn-telegram" class="daily-btn" style="background: #0284c7;" onclick="doTelegramTask()">انضمام</button>
               </div>
 
               <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.1); padding: 10px; border-radius: 8px;">
-                <span style="color: #ffffff; font-weight: bold;">دعوة 5 أصدقاء (50+)</span>
-                <button id="btn-invite" class="daily-btn" style="background: #10b981;" onclick="doInviteTask()">مشاركة الرابط</button>
+                <span style="color: #ffffff; font-weight: bold; font-size: 13px; max-width: 65%;">دعوة صديق (يصل لـ 100 نقطة لتربح 100)</span>
+                <button id="btn-invite" class="daily-btn" style="background: #10b981;" onclick="doInviteTask()">دعوة</button>
               </div>
             </div>
         </div>
@@ -260,12 +276,12 @@
                 </div>
                 <h3 style="margin-bottom: 8px; color: #facc15;">💰 محفظة السحب والأرباح</h3>
                 <p style="font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 15px;">
-                    نقاطك قيد الاحتساب والتثبيت المستمر. عند إكمال شريط التقدم والتأهل للمستوى الأول، سيتم فتح نافذة سحب الأرباح لحسابك تلقائياً!
+                    نقاطك قيد الاحتساب. لتأكيد حسابك وضمان إحالاتك، تأكد من الحفظ المستمر!
                 </p>
 
                 <!-- زر حفظ التقدم للسيرفر -->
-                <button class="btn-action" style="background: #f59e0b; margin-bottom: 15px;" onclick="saveProgressToServer()">
-                    💾 حفظ التقدم في السيرفر
+                <button class="btn-action" style="background: #f59e0b; margin-bottom: 15px; padding: 15px;" onclick="saveProgressToServer()">
+                    💾 حفظ التقدم في السيرفر (مهم جداً)
                 </button>
 
                 <div class="progress-box">
@@ -313,6 +329,7 @@
         let tg = window.Telegram.WebApp;
         tg.expand();
 
+        /* نظام النقاط */
         let userPoints = parseInt(localStorage.getItem('syclick_points')) || 0;
         updatePoints(0);
 
@@ -331,6 +348,30 @@
             document.getElementById('progressBarFill').style.width = percent + '%';
         }
 
+        /* نظام الطاقة */
+        let userEnergy = parseInt(localStorage.getItem('syclick_energy'));
+        if (isNaN(userEnergy)) userEnergy = 1000;
+        updateEnergy(0);
+
+        function updateEnergy(amount) {
+            userEnergy += amount;
+            if (userEnergy > 1000) userEnergy = 1000;
+            if (userEnergy < 0) userEnergy = 0;
+            localStorage.setItem('syclick_energy', userEnergy);
+            document.getElementById('energy').innerText = userEnergy;
+        }
+
+        function chargeEnergy() {
+            const btn = document.getElementById('energyClicker');
+            btn.style.transform = 'scale(0.9)';
+            setTimeout(() => btn.style.transform = 'scale(1)', 100);
+            
+            if (userEnergy < 1000) {
+                updateEnergy(5);
+            }
+        }
+
+        /* تبديل الصفحات */
         function switchTab(tabId, el) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -338,10 +379,10 @@
             el.classList.add('active');
         }
 
+        /* الروابط والسيرفر */
         const TELEGRAM_CHANNEL_URL = "https://t.me/Syclickchannel";
-        const BOT_USERNAME = "SyclickBot"; // يوزر بوتك على التليجرام (بدون علامة @)
+        const BOT_USERNAME = "SyclickBot"; // يوزر بوتك بدون علامة @
 
-        // 1. مهمة قناة التليجرام (تفتح القناة وترسل طلب التحقق للسيرفر)
         function doTelegramTask() {
             if (window.Telegram && window.Telegram.WebApp) {
                 window.Telegram.WebApp.openTelegramLink(TELEGRAM_CHANNEL_URL);
@@ -349,19 +390,16 @@
             }
         }
 
-        // 2. مهمة دعوة الأصدقاء (تفتح نافذة المشاركة الرسمية في تيليجرام مع رابط الإحالة)
         function doInviteTask() {
             if (window.Telegram && window.Telegram.WebApp) {
                 const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id || '';
                 const inviteUrl = `https://t.me/${BOT_USERNAME}?start=${userId}`;
-                const shareText = encodeURIComponent("🚀 انضم إلينا في منصة SyClick واجمع النقاط واربح معنا!");
+                const shareText = encodeURIComponent("🚀 انضم إلينا في منصة SyClick، العب واجمع النقاط!");
                 const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${shareText}`;
-                
                 window.Telegram.WebApp.openTelegramLink(shareUrl);
             }
         }
 
-        // 3. دالة حفظ التقدم في السيرفر
         function saveProgressToServer() {
             if (window.Telegram && window.Telegram.WebApp) {
                 window.Telegram.WebApp.sendData(JSON.stringify({ action: "save_points", points: userPoints }));
@@ -371,21 +409,34 @@
             }
         }
 
-        /* الألعاب والعناصر الأخرى */
+        /* 1. لعبة الذاكرة (50 طاقة) */
         const symbols = ['⭐', '💎', '🚀', '🔥', '⭐', '💎', '🚀', '🔥'];
         let flipped = [], matchedCount = 0;
+        let memoryRoundStarted = false;
 
         function initMemory() {
             const grid = document.getElementById('memoryGrid');
             grid.innerHTML = '';
             matchedCount = 0;
             flipped = [];
+            memoryRoundStarted = false;
+            
             const shuffled = symbols.sort(() => 0.5 - Math.random());
             shuffled.forEach(sym => {
                 const card = document.createElement('div');
                 card.className = 'memory-card';
                 card.dataset.sym = sym;
                 card.onclick = () => {
+                    // سحب الطاقة عند أول ضغطة في الجولة
+                    if (!memoryRoundStarted) {
+                        if (userEnergy < 50) {
+                            alert("⚠️ طاقتك لا تكفي (تحتاج 50)! انقر على زر الطاقة لتعبئتها.");
+                            return;
+                        }
+                        updateEnergy(-50);
+                        memoryRoundStarted = true;
+                    }
+
                     if (flipped.length < 2 && !card.classList.contains('flipped') && !card.classList.contains('matched')) {
                         card.classList.add('flipped');
                         card.innerText = sym;
@@ -398,8 +449,8 @@
                                     matchedCount += 2;
                                     if (matchedCount === 8) {
                                         updatePoints(20);
-                                        alert('🎉 رائع وسريع! أنهيت البطاقات بنجاح وربحت 20 نقطة!');
-                                        initMemory();
+                                        alert('🎉 رائع وسريع! أنهيت البطاقات وربحت 20 نقطة!');
+                                        initMemory(); // إعادة تعيين الجولة
                                     }
                                 } else {
                                     flipped[0].classList.remove('flipped');
@@ -417,51 +468,68 @@
         }
         initMemory();
 
-        let tapScore = 0, tapTimer, tapMove;
-        function startTapGame() {
-            tapScore = 0;
-            let time = 15;
-            document.getElementById('startTapBtn').style.display = 'none';
-            document.getElementById('tapArea').style.display = 'block';
-            document.getElementById('tapTimer').innerText = `الوقت: ${time} ث`;
-            moveTarget();
-            tapMove = setInterval(moveTarget, 850);
-            tapTimer = setInterval(() => {
-                time--;
-                document.getElementById('tapTimer').innerText = `الوقت: ${time} ث`;
-                if (time <= 0) {
-                    clearInterval(tapMove);
-                    clearInterval(tapTimer);
-                    document.getElementById('tapArea').style.display = 'none';
-                    document.getElementById('startTapBtn').style.display = 'block';
-                    let earned = tapScore * 2;
-                    updatePoints(earned);
-                    alert(`⚡ رائع! اصطدت ${tapScore} شحنة طاقة وربحت ${earned} نقطة!`);
-                }
-            }, 1000);
-        }
-        function moveTarget() {
-            const t = document.getElementById('tapTarget');
-            const a = document.getElementById('tapArea');
-            t.style.left = Math.floor(Math.random() * (a.clientWidth - 50)) + 'px';
-            t.style.top = Math.floor(Math.random() * (a.clientHeight - 50)) + 'px';
-        }
-        function hitTarget() { tapScore++; moveTarget(); }
-
-        let currentNum = 50;
-        function guessNext(isHigher) {
-            let nextNum = Math.floor(Math.random() * 100) + 1;
-            let win = isHigher ? nextNum >= currentNum : nextNum <= currentNum;
-            if (win) {
-                updatePoints(10);
-                alert(`إجابة صحيحة! الرقم التالي كان (${nextNum}). ربحت 10 نقطة!`);
-            } else {
-                alert(`للأسف خطأ! الرقم التالي كان (${nextNum}). حاول مجدداً!`);
+        /* 2. لعبة صناديق الحظ (50 طاقة) */
+        let boxesPlaying = false;
+        function openBox(index) {
+            if (boxesPlaying) return;
+            
+            if (userEnergy < 50) {
+                alert("⚠️ طاقتك لا تكفي (تحتاج 50)! انقر على زر الطاقة لتعبئتها.");
+                return;
             }
-            currentNum = nextNum;
-            document.getElementById('currentNum').innerText = currentNum;
+            updateEnergy(-50);
+            boxesPlaying = true;
+            
+            const boxes = document.querySelectorAll('.box');
+            let winningIndex = Math.floor(Math.random() * 4);
+            
+            if (index === winningIndex) {
+                boxes[index].innerText = '💎';
+                updatePoints(20);
+                setTimeout(() => alert("🎉 مبروك! لقد وجدت الماسة وربحت 20 نقطة!"), 100);
+            } else {
+                boxes[index].innerText = '❌';
+                boxes[winningIndex].innerText = '💎';
+                setTimeout(() => alert("للأسف الصندوق فارغ! حاول مرة أخرى."), 100);
+            }
+
+            // إعادة إغلاق الصناديق بعد ثانية ونصف
+            setTimeout(() => {
+                boxes.forEach(b => b.innerText = '📦');
+                boxesPlaying = false;
+            }, 1500);
         }
 
+        /* 3. عجلة الحظ (70 طاقة) */
+        let currentRotation = 0;
+        function spinWheel() {
+            if (userEnergy < 70) {
+                alert("⚠️ طاقتك لا تكفي (تحتاج 70)! انقر على زر الطاقة لتعبئتها.");
+                return;
+            }
+
+            const lastSpin = localStorage.getItem('last_spin');
+            const now = Date.now();
+            if (lastSpin && now - parseInt(lastSpin) < 24 * 60 * 60 * 1000) {
+                const hoursLeft = Math.ceil((24 * 60 * 60 * 1000 - (now - parseInt(lastSpin))) / (1000 * 60 * 60));
+                alert(`⚠️ لديك فرصة تدوير واحدة يومياً! عُد بعد ${hoursLeft} ساعة.`);
+                return;
+            }
+            
+            updateEnergy(-70);
+            const prizes = [10, 20, 50, 100, 200];
+            const p = prizes[Math.floor(Math.random() * prizes.length)];
+            currentRotation += 1440 + Math.floor(Math.random() * 360);
+            document.getElementById('wheelCircle').style.transform = `rotate(${currentRotation}deg)`;
+            
+            setTimeout(() => {
+                localStorage.setItem('last_spin', now);
+                updatePoints(p);
+                document.getElementById('wheelResult').innerText = `🎉 مبروك! ربحت ${p} نقطة!`;
+            }, 3600);
+        }
+
+        /* الحضور اليومي */
         function dailyCheckIn() {
             const lastCheck = localStorage.getItem('last_checkin');
             const now = Date.now();
@@ -473,31 +541,6 @@
             localStorage.setItem('last_checkin', now);
             updatePoints(50);
             alert('🎉 تم استلام هدية الحضور اليومي بنجاح (+50 نقطة)!');
-        }
-
-        let currentRotation = 0;
-        function spinWheel() {
-            const lastSpin = localStorage.getItem('last_spin');
-            const now = Date.now();
-            if (lastSpin && now - parseInt(lastSpin) < 24 * 60 * 60 * 1000) {
-                const hoursLeft = Math.ceil((24 * 60 * 60 * 1000 - (now - parseInt(lastSpin))) / (1000 * 60 * 60));
-                alert(`⚠️ لديك فرصة تدوير واحدة يومياً! عُد بعد ${hoursLeft} ساعة.`);
-                return;
-            }
-            const prizes = [10, 20, 50, 100, 200];
-            const p = prizes[Math.floor(Math.random() * prizes.length)];
-            currentRotation += 1440 + Math.floor(Math.random() * 360);
-            document.getElementById('wheelCircle').style.transform = `rotate(${currentRotation}deg)`;
-            setTimeout(() => {
-                localStorage.setItem('last_spin', now);
-                updatePoints(p);
-                document.getElementById('wheelResult').innerText = `🎉 مبروك! ربحت ${p} نقطة!`;
-            }, 3600);
-        }
-
-        function completeTask(pts) {
-            updatePoints(pts);
-            alert(`تم تأكيد المهمة وإضافة ${pts} نقطة!`);
         }
 
         function showProgressStatus() {
