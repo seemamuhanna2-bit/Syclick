@@ -229,24 +229,27 @@
                 <div id="energyClicker" onclick="chargeEnergy()">⚡</div>
             </div>
 
-            <!-- لعبة إكس أو (XO) -->
+            <!-- لعبة إكس أو (XO) الذكية -->
             <div class="card" style="text-align: center;">
                 <h3 style="color: #ec4899; margin-bottom: 5px;">❌ إكس أو (50 طاقة)</h3>
-                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;">العب ضد البوت، الفوز يمنحك 30 نقطة!</p>
+                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;">العب ضد البوت الذكي، الفوز يمنحك 30 نقطة!</p>
                 <button class="btn-action" style="background-color: #ec4899; width: auto; padding: 8px 20px;" onclick="startXO()">بدء جولة جديدة</button>
                 <div class="xo-grid" id="xoGrid"></div>
             </div>
 
-            <!-- لعبة حجرة ورقة مقص -->
+            <!-- لعبة حجرة ورقة مقص التفاعلية -->
             <div class="card" style="text-align: center;">
                 <h3 style="color: #10b981; margin-bottom: 5px;">✌️ حجرة ورقة مقص (50 طاقة)</h3>
-                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">اغلب البوت واربح 20 نقطة!</p>
-                <div style="display: flex; justify-content: space-around; font-size: 35px;">
+                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;">اغلب البوت واربح 20 نقطة!</p>
+                
+                <button class="btn-action" id="startRpsBtn" style="background-color: #10b981; width: auto; padding: 8px 20px; margin-bottom: 15px;" onclick="startRPS()">بدء التحدي</button>
+                
+                <div id="rpsButtons" style="display: flex; justify-content: space-around; font-size: 35px; opacity: 0.4; pointer-events: none; transition: 0.3s;">
                     <div style="cursor: pointer; background: #334155; padding: 10px; border-radius: 50%; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border: 2px solid #475569;" onclick="playRPS('✊')">✊</div>
                     <div style="cursor: pointer; background: #334155; padding: 10px; border-radius: 50%; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border: 2px solid #475569;" onclick="playRPS('✋')">✋</div>
                     <div style="cursor: pointer; background: #334155; padding: 10px; border-radius: 50%; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border: 2px solid #475569;" onclick="playRPS('✌️')">✌️</div>
                 </div>
-                <div id="rpsResult" style="margin-top: 15px; font-weight: bold; font-size: 14px; color: #f8fafc;"></div>
+                <div id="rpsResult" style="margin-top: 15px; font-weight: bold; font-size: 16px; color: #f8fafc; transition: 0.3s; min-height: 24px;"></div>
             </div>
 
             <!-- لعبة الذاكرة -->
@@ -425,32 +428,69 @@
             }
         }
 
-        /* =================== لعبة حجرة ورقة مقص =================== */
-        function playRPS(playerChoice) {
+        /* =================== لعبة حجرة ورقة مقص (المطورة) =================== */
+        let isRpsActive = false;
+
+        function startRPS() {
             if (userEnergy < 50) return alert("⚠️ طاقتك لا تكفي (تحتاج 50)! انقر على زر الطاقة لتعبئتها.");
             updateEnergy(-50);
             
+            document.getElementById('startRpsBtn').style.display = 'none';
+            const rpsResult = document.getElementById('rpsResult');
+            const rpsButtons = document.getElementById('rpsButtons');
+            
+            rpsResult.style.color = '#facc15';
+            rpsResult.innerText = "3️⃣...";
+            
+            setTimeout(() => { rpsResult.innerText = "2️⃣..."; }, 800);
+            setTimeout(() => { rpsResult.innerText = "1️⃣..."; }, 1600);
+            
+            setTimeout(() => {
+                rpsResult.style.color = '#38bdf8';
+                rpsResult.innerText = "🔥 اختر الآن بسرعة! 🔥";
+                rpsButtons.style.opacity = '1';
+                rpsButtons.style.pointerEvents = 'auto';
+                isRpsActive = true;
+            }, 2400);
+        }
+
+        function playRPS(playerChoice) {
+            if (!isRpsActive) return;
+            isRpsActive = false;
+            
+            const rpsButtons = document.getElementById('rpsButtons');
+            rpsButtons.style.opacity = '0.4';
+            rpsButtons.style.pointerEvents = 'none';
+            
+            const startBtn = document.getElementById('startRpsBtn');
+            startBtn.style.display = 'inline-block';
+            startBtn.innerText = 'العب مرة أخرى (50 طاقة)';
+
             const choices = ['✊', '✋', '✌️'];
             const botChoice = choices[Math.floor(Math.random() * 3)];
             let resultText = "";
+            const rpsResult = document.getElementById('rpsResult');
             
             if (playerChoice === botChoice) {
                 resultText = `🤝 تعادل! البوت اختار ${botChoice}`;
+                rpsResult.style.color = '#94a3b8';
             } else if (
                 (playerChoice === '✊' && botChoice === '✌️') ||
                 (playerChoice === '✋' && botChoice === '✊') ||
                 (playerChoice === '✌️' && botChoice === '✋')
             ) {
                 resultText = `🎉 فزت! البوت اختار ${botChoice}. (+20 نقطة)`;
+                rpsResult.style.color = '#10b981';
                 updatePoints(20);
             } else {
                 resultText = `❌ خسرت! البوت اختار ${botChoice}`;
+                rpsResult.style.color = '#ef4444';
             }
             
-            document.getElementById('rpsResult').innerText = resultText;
+            rpsResult.innerText = resultText;
         }
 
-        /* =================== لعبة إكس أو (XO) =================== */
+        /* =================== لعبة إكس أو الذكية (XO) =================== */
         let boardXO = ['','','','','','','','',''];
         let isGameActiveXO = false;
 
@@ -474,6 +514,47 @@
             });
         }
 
+        function checkWinXO(player) {
+            const winConditions = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+            return winConditions.some(comb => comb.every(idx => boardXO[idx] === player));
+        }
+
+        // ذكاء البوت الجديد
+        function getBestMoveXO() {
+            const winConditions = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            
+            // 1. محاولة الفوز
+            for (let comb of winConditions) {
+                let oCount = 0, emptyIdx = -1;
+                for (let idx of comb) {
+                    if (boardXO[idx] === 'O') oCount++;
+                    else if (boardXO[idx] === '') emptyIdx = idx;
+                }
+                if (oCount === 2 && emptyIdx !== -1) return emptyIdx;
+            }
+            
+            // 2. الدفاع وقطع الطريق على اللاعب
+            for (let comb of winConditions) {
+                let xCount = 0, emptyIdx = -1;
+                for (let idx of comb) {
+                    if (boardXO[idx] === 'X') xCount++;
+                    else if (boardXO[idx] === '') emptyIdx = idx;
+                }
+                if (xCount === 2 && emptyIdx !== -1) return emptyIdx;
+            }
+            
+            // 3. السيطرة على المنتصف
+            if (boardXO[4] === '') return 4;
+            
+            // 4. اختيار عشوائي لما تبقى
+            let emptyCells = boardXO.map((val, idx) => val === '' ? idx : null).filter(val => val !== null);
+            return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+        }
+
         function makeMoveXO(index) {
             if (!isGameActiveXO || boardXO[index] !== '') return;
             
@@ -483,41 +564,32 @@
             if (checkWinXO('X')) {
                 isGameActiveXO = false;
                 updatePoints(30);
-                setTimeout(() => alert("🎉 بطل! لقد فزت على البوت (+30 نقطة)"), 100);
+                setTimeout(() => alert("🎉 بطل! لقد فزت بذكاء (+30 نقطة)"), 100);
                 return;
             }
             
             if (!boardXO.includes('')) {
                 isGameActiveXO = false;
-                setTimeout(() => alert("تعادل! لا أحد فاز."), 100);
-                return;
+                setTimeout(() => alert("🤝 تعادل! لا أحد فاز."), 100);
+                return; // إنهاء الجولة فوراً لمنع البوت من اللعب وتصحيح الخطأ
             }
             
-            // حركة البوت التلقائية
+            // حركة البوت الذكية
             setTimeout(() => {
-                let emptyCells = boardXO.map((val, idx) => val === '' ? idx : null).filter(val => val !== null);
-                if (emptyCells.length === 0) return;
-                
-                let botIdx = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                let botIdx = getBestMoveXO();
                 boardXO[botIdx] = 'O';
                 renderXO();
                 
                 if (checkWinXO('O')) {
                     isGameActiveXO = false;
-                    setTimeout(() => alert("🤖 للأسف فاز البوت! حظاً أوفر في الجولة القادمة."), 100);
+                    setTimeout(() => alert("🤖 البوت الذكي غلبك! حظاً أوفر."), 100);
+                } else if (!boardXO.includes('')) {
+                    isGameActiveXO = false;
+                    setTimeout(() => alert("🤝 تعادل! لا أحد فاز."), 100);
                 }
             }, 300);
         }
-
-        function checkWinXO(player) {
-            const winConditions = [
-                [0, 1, 2], [3, 4, 5], [6, 7, 8],
-                [0, 3, 6], [1, 4, 7], [2, 5, 8],
-                [0, 4, 8], [2, 4, 6]
-            ];
-            return winConditions.some(comb => comb.every(idx => boardXO[idx] === player));
-        }
-        renderXO(); // عرض الشبكة فارغة عند البداية
+        renderXO();
 
         /* =================== لعبة الذاكرة =================== */
         const symbols = ['⭐', '💎', '🚀', '🔥', '⭐', '💎', '🚀', '🔥'];
