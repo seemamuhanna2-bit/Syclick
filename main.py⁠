@@ -127,16 +127,46 @@ def main_keyboard():
     markup.add(btn_webapp)
     return markup
 
+# أمر البدء ونظام دعوة الأصدقاء (Referral System)
 @bot.message_handler(commands=['start'])
 def start_cmd(message):
     user_id = message.chat.id
     username = message.from_user.username or message.from_user.first_name or "بدون اسم"
-    user = get_user(user_id, username)
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    param = "%s" if DATABASE_URL else "?"
+    
+    cursor.execute(f"SELECT points FROM users WHERE user_id = {param}", (user_id,))
+    row = cursor.fetchone()
+    
+    if not row:
+        # مستخدم جديد! فحص ما إذا كان دخل عبر رابط إحالة
+        args = message.text.split()
+        referrer_id = 0
+        if len(args) > 1 and args[1].isdigit():
+            referrer_id = int(args[1])
+            if referrer_id != user_id:
+                # إضافة 10 نقاط لصاحب الرابط الأصلي
+                cursor.execute(f"UPDATE users SET points = points + 10 WHERE user_id = {param}", (referrer_id,))
+                try:
+                    bot.send_message(referrer_id, "🎉 **مبروك!** انضم صديق جديد عبر رابطك وحصلت على **10 نقاط** إضافية.", parse_mode="Markdown")
+                except Exception:
+                    pass
+        
+        cursor.execute(f"INSERT INTO users (user_id, username, points, referrer_id) VALUES ({param}, {param}, 0, {param})", (user_id, username, referrer_id))
+        conn.commit()
+        points = 0
+    else:
+        points = row[0]
+        
+    cursor.close()
+    conn.close()
     
     text = (
         "🚀 **أهلاً بك في منصة SyClick** 🚀\n\n"
         "المنصة التفاعلية لتنفيذ مهام التأهيل وجمع النقاط والانطلاق بالعمل الرقمي.\n\n"
-        f"💎 رصيدك الحالي: **{user[0]:,}** نقطة\n\n"
+        f"💎 رصيدك الحالي في السيرفر: **{points:,}** نقطة\n\n"
         "اضغط على الزر أدناه لفتح المنصة والبدء 👇"
     )
     bot.send_message(user_id, text, reply_markup=main_keyboard(), parse_mode="Markdown")
@@ -174,8 +204,38 @@ def admin_cmd(message):
         uname = f"@{p[1]}" if p[1] and p[1] != "بدون اسم" else f"`{p[0]}`"
         report += f"{idx}. {uname} ➔ **{p[2]:,}** نقطة\n"
 
-    report += "\n_قاعدة البيانات السحابية متصلة وآمنة 100%._"
+    report += "\n_💡 أرسل أمر /users لعرض كل المستخدمين بالتفصيل._"
     bot.send_message(message.chat.id, report, parse_mode="Markdown")
+
+# استعراض جميع المستخدمين للمشرف
+@bot.message_handler(commands=['users'])
+def admin_users_cmd(message):
+    if message.chat.id != ADMIN_CHAT_ID:
+        return
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT user_id, username, points FROM users ORDER BY points DESC")
+    all_users = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    if not all_users:
+        bot.send_message(message.chat.id, "لا يوجد مستخدمين بعد.")
+        return
+
+    report = "📋 **قائمة كل اللاعبين والنقاط:**\n\n"
+    for idx, p in enumerate(all_users, 1):
+        uname = p[1] if p[1] else "بدون اسم"
+        line = f"{idx}. {uname} (`{p[0]}`) ➔ {p[2]:,} نقطة\n"
+        
+        if len(report) + len(line) > 3800:
+            bot.send_message(message.chat.id, report, parse_mode="Markdown")
+            report = ""
+        report += line
+
+    if report:
+        bot.send_message(message.chat.id, report, parse_mode="Markdown")
 # ==================================================================
 
 # استقبال البيانات والأوامر من التطبيق المصغر (Mini App)
@@ -185,7 +245,7 @@ def handle_web_app_data(message):
     user_id = message.from_user.id
     username = message.from_user.username or message.from_user.first_name or "بدون اسم"
     user_data = get_user(user_id, username)
-    points = user_data[0]
+    current_points = user_data[0]
 
     try:
         data = json.loads(data_str)
@@ -194,8 +254,33 @@ def handle_web_app_data(message):
 
     action = data.get("action")
 
-    # معالجة طلب سحب الأرباح
-    if action == 'withdraw':
+    # 1. التحقق من الانضمام للقناة
+    if action == 'verify_channel':
+        try:
+            member = bot.get_chat_member(CHANNEL_USERNAME, user_id)
+            if member.status in ['member', 'administrator', 'creator']:
+                update_user_balance(user_id, 10) # إضافة 10 نقاط
+                bot.send_message(user_id, "✅ **تم التحقق!** شكراً لانضمامك للقناة، تمت إضافة **10 نقاط** لرصيدك.", parse_mode="Markdown")
+            else:
+                bot.send_message(user_id, f"❌ **لم تقم بالانضمام بعد!** يرجى الانضمام للقناة أولاً للحصول على النقاط:\n{CHANNEL_USERNAME}", parse_mode="Markdown")
+        except Exception as e:
+            bot.send_message(user_id, f"⚠️ **عذراً:** يرجى التأكد من انضمامك للقناة أولاً {CHANNEL_USERNAME} \n(تأكد أيضاً من رفع البوت كأدمن في القناة ليعمل الفحص)", parse_mode="Markdown")
+
+    # 2. حفظ التقدم القادم من الـ Mini App
+    elif action == 'save_points':
+        new_points = data.get("points", 0)
+        if new_points > current_points:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            param = "%s" if DATABASE_URL else "?"
+            cursor.execute(f"UPDATE users SET points = {param} WHERE user_id = {param}", (new_points, user_id))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            bot.send_message(user_id, f"💾 **تم حفظ تقدمك بنجاح!**\nرصيدك الآن في السيرفر أصبح: **{new_points:,}** نقطة.", parse_mode="Markdown")
+
+    # 3. معالجة طلب سحب الأرباح
+    elif action == 'withdraw':
         method_names = {
             "sham_cash": "شام كاش",
             "haram": "شركة الهرم",
@@ -204,52 +289,51 @@ def handle_web_app_data(message):
         method = method_names.get(data.get("method"), data.get("method", "محلي"))
         details = data.get("details", "لا توجد تفاصيل")
 
-        if points >= 50000:
+        if current_points >= 50000:
             conn = get_db_connection()
             cursor = conn.cursor()
             param = "%s" if DATABASE_URL else "?"
             cursor.execute(f"INSERT INTO withdraw_requests (user_id, amount, method, details) VALUES ({param}, {param}, {param}, {param})",
-                           (user_id, points, method, details))
+                           (user_id, current_points, method, details))
             cursor.execute(f"UPDATE users SET points = 0 WHERE user_id = {param}", (user_id,))
             conn.commit()
             cursor.close()
             conn.close()
 
-            # إشعار للمستخدم
             bot.send_message(
                 user_id,
                 f"✅ **تم تسجيل طلبك بنجاح!**\n\n"
-                f"💰 النقاط المحولة: {points:,} نقطة\n"
+                f"💰 النقاط المحولة: {current_points:,} نقطة\n"
                 f"🏦 وسيلة الاستلام: {method}\n"
                 f"📝 البيانات المسجلة: `{details}`\n\n"
                 "سيتم مراجعة إتمام مرحلة التأهيل والتواصل معك قريباً.",
                 parse_mode="Markdown"
             )
 
-            # إشعار مباشر للإدارة
             if ADMIN_CHAT_ID != 0:
                 try:
                     admin_text = (
                         "🚨 **طلب تأهيل وسحب جديد في SyClick!**\n\n"
                         f"👤 المستخدم: @{username} (`{user_id}`)\n"
-                        f"💰 النقاط: {points:,}\n"
+                        f"💰 النقاط: {current_points:,}\n"
                         f"🏦 وسيلة السحب: {method}\n"
                         f"📋 بيانات التحويل: `{details}`"
                     )
                     bot.send_message(ADMIN_CHAT_ID, admin_text, parse_mode="Markdown")
                 except Exception as e:
-                    print("تنبيه: لم يتمكن البوت من مراسلة المشرف:", e)
+                    pass
         else:
-            bot.send_message(user_id, f"❌ رصيدك الحالي ({points:,} نقطة) أقل من الحد الأدنى المطلوب للتأهيل (50,000 نقطة).")
+            bot.send_message(user_id, f"❌ رصيدك الحالي في السيرفر ({current_points:,} نقطة) أقل من الحد الأدنى المطلوب للتأهيل (50,000 نقطة).")
 
-    # نسخ رابط الدعوة
+    # 4. نسخ رابط الدعوة
     elif action == 'invite':
         bot_info = bot.get_me()
         bot.send_message(
             user_id,
             f"🔗 **رابط الدعوة الخاص بك:**\n"
             f"https://t.me/{bot_info.username}?start={user_id}\n\n"
-            "شارك هذا الرابط مع أصدقائك؛ ستحصل على نقاط إضافية تؤهلك بشكل أسرع لكل صديق ينضم عبرك!"
+            "🎁 شارك هذا الرابط مع 5 من أصدقائك!\n"
+            "ستحصل على **10 نقاط** عن كل صديق ينضم عبر رابطك (الإجمالي 50 نقطة عند دعوة 5 أصدقاء)."
         )
 
 if __name__ == '__main__':
