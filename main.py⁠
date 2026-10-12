@@ -4,7 +4,11 @@ from flask import Flask
 from threading import Thread
 import telebot
 from telebot import types
-import sqlite3
+
+# دعم كل من SQLite محلياً و PostgreSQL سحابياً لضمان حفظ البيانات
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if DATABASE_URL:
+    import psycopg2
 
 # خادم الويب لإبقاء البوت نشطاً على Render
 app = Flask('')
@@ -24,56 +28,95 @@ def keep_alive():
 # ================= الإعدادات الأمنية =================
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 CHANNEL_USERNAME = "@Syclickchannel"
-
-# قراءة الآيدي بأمان من Render دون كتابته علناً في GitHub
 ADMIN_CHAT_ID = int(os.environ.get("ADMIN_CHAT_ID", 0))
 # ====================================================
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# تجهيز قاعدة البيانات
+# دالة فتح الاتصال بقاعدة البيانات المناسبة
+def get_db_connection():
+    if DATABASE_URL:
+        db_url = DATABASE_URL
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql://", 1)
+        return psycopg2.connect(db_url)
+    else:
+        import sqlite3
+        return sqlite3.connect('database.db')
+
+# تجهيز جداول قاعدة البيانات
 def init_db():
-    conn = sqlite3.connect('database.db')
+    conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            user_id INTEGER PRIMARY KEY,
-            points INTEGER DEFAULT 0,
-            referrer_id INTEGER DEFAULT 0
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS withdraw_requests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            amount INTEGER,
-            method TEXT,
-            details TEXT,
-            status TEXT DEFAULT 'pending'
-        )
-    ''')
+    
+    if DATABASE_URL:
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                user_id BIGINT PRIMARY KEY,
+                username TEXT,
+                points BIGINT DEFAULT 0,
+                referrer_id BIGINT DEFAULT 0,
+                joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS withdraw_requests (
+                id SERIAL PRIMARY KEY,
+                user_id BIGINT,
+                amount BIGINT,
+                method TEXT,
+                details TEXT,
+                status TEXT DEFAULT 'pending'
+            )
+        ''')
+    else:
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                user_id INTEGER PRIMARY KEY,
+                username TEXT,
+                points INTEGER DEFAULT 0,
+                referrer_id INTEGER DEFAULT 0,
+                joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS withdraw_requests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                amount INTEGER,
+                method TEXT,
+                details TEXT,
+                status TEXT DEFAULT 'pending'
+            )
+        ''')
+        
     conn.commit()
+    cursor.close()
     conn.close()
 
 init_db()
 
-def get_user(user_id):
-    conn = sqlite3.connect('database.db')
+def get_user(user_id, username=""):
+    conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT points FROM users WHERE user_id = ?", (user_id,))
+    param = "%s" if DATABASE_URL else "?"
+    cursor.execute(f"SELECT points FROM users WHERE user_id = {param}", (user_id,))
     row = cursor.fetchone()
     if not row:
-        cursor.execute("INSERT INTO users (user_id, points) VALUES (?, 0)", (user_id,))
+        cursor.execute(f"INSERT INTO users (user_id, username, points) VALUES ({param}, {param}, 0)", (user_id, username))
         conn.commit()
         row = (0,)
+    cursor.close()
     conn.close()
     return row
 
 def update_user_balance(user_id, points_delta=0):
-    conn = sqlite3.connect('database.db')
+    conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE users SET points = points + ? WHERE user_id = ?", (points_delta, user_id))
+    param = "%s" if DATABASE_URL else "?"
+    cursor.execute(f"UPDATE users SET points = points + {param} WHERE user_id = {param}", (points_delta, user_id))
     conn.commit()
+    cursor.close()
     conn.close()
 
 # لوحة مفاتيح تشغيل التطبيق المصغر
@@ -87,21 +130,61 @@ def main_keyboard():
 @bot.message_handler(commands=['start'])
 def start_cmd(message):
     user_id = message.chat.id
-    user = get_user(user_id)
+    username = message.from_user.username or message.from_user.first_name or "بدون اسم"
+    user = get_user(user_id, username)
+    
     text = (
         "🚀 **أهلاً بك في منصة SyClick** 🚀\n\n"
-        "المنصة التفاعلية للألعاب وتنفيذ المهام وجمع النقاط والسحب محلياً.\n\n"
+        "المنصة التفاعلية لتنفيذ مهام التأهيل وجمع النقاط والانطلاق بالعمل الرقمي.\n\n"
         f"💎 رصيدك الحالي: **{user[0]:,}** نقطة\n\n"
-        "اضغط على الزر أدناه لفتح المنصة والبدء باللعب 👇"
+        "اضغط على الزر أدناه لفتح المنصة والبدء 👇"
     )
     bot.send_message(user_id, text, reply_markup=main_keyboard(), parse_mode="Markdown")
+
+# ================= لوحة تحكم المشرف (Admin Panel) =================
+@bot.message_handler(commands=['admin', 'stats'])
+def admin_cmd(message):
+    if message.chat.id != ADMIN_CHAT_ID:
+        return
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*), COALESCE(SUM(points), 0) FROM users")
+    total_users, total_points = cursor.fetchone()
+
+    cursor.execute("SELECT user_id, username, points FROM users ORDER BY points DESC LIMIT 5")
+    top_players = cursor.fetchall()
+
+    cursor.execute("SELECT COUNT(*) FROM withdraw_requests WHERE status = 'pending'")
+    pending_withdrawals = cursor.fetchone()[0]
+
+    cursor.close()
+    conn.close()
+
+    report = (
+        "📊 **لوحة تحكم إدارة SyClick** 📊\n\n"
+        f"👥 **إجمالي المسجلين:** {total_users:,} لاعب\n"
+        f"💰 **إجمالي النقاط المسجلة:** {total_points:,} نقطة\n"
+        f"⏳ **طلبات السحب المعلقة:** {pending_withdrawals}\n\n"
+        "🏆 **أعلى 5 متصدرين حالياً:**\n"
+    )
+
+    for idx, p in enumerate(top_players, 1):
+        uname = f"@{p[1]}" if p[1] and p[1] != "بدون اسم" else f"`{p[0]}`"
+        report += f"{idx}. {uname} ➔ **{p[2]:,}** نقطة\n"
+
+    report += "\n_قاعدة البيانات السحابية متصلة وآمنة 100%._"
+    bot.send_message(message.chat.id, report, parse_mode="Markdown")
+# ==================================================================
 
 # استقبال البيانات والأوامر من التطبيق المصغر (Mini App)
 @bot.message_handler(content_types=['web_app_data'])
 def handle_web_app_data(message):
     data_str = message.web_app_data.data
     user_id = message.from_user.id
-    user_data = get_user(user_id)
+    username = message.from_user.username or message.from_user.first_name or "بدون اسم"
+    user_data = get_user(user_id, username)
     points = user_data[0]
 
     try:
@@ -122,22 +205,24 @@ def handle_web_app_data(message):
         details = data.get("details", "لا توجد تفاصيل")
 
         if points >= 50000:
-            conn = sqlite3.connect('database.db')
+            conn = get_db_connection()
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO withdraw_requests (user_id, amount, method, details) VALUES (?, ?, ?, ?)",
+            param = "%s" if DATABASE_URL else "?"
+            cursor.execute(f"INSERT INTO withdraw_requests (user_id, amount, method, details) VALUES ({param}, {param}, {param}, {param})",
                            (user_id, points, method, details))
-            cursor.execute("UPDATE users SET points = 0 WHERE user_id = ?", (user_id,))
+            cursor.execute(f"UPDATE users SET points = 0 WHERE user_id = {param}", (user_id,))
             conn.commit()
+            cursor.close()
             conn.close()
 
             # إشعار للمستخدم
             bot.send_message(
                 user_id,
-                f"✅ **تم تسجيل طلب السحب بنجاح!**\n\n"
-                f"💰 المبلغ المسحوب: {points:,} نقطة\n"
+                f"✅ **تم تسجيل طلبك بنجاح!**\n\n"
+                f"💰 النقاط المحولة: {points:,} نقطة\n"
                 f"🏦 وسيلة الاستلام: {method}\n"
                 f"📝 البيانات المسجلة: `{details}`\n\n"
-                "سيتم مراجعة الطلب وتحويل المبلغ خلال وقت قصير.",
+                "سيتم مراجعة إتمام مرحلة التأهيل والتواصل معك قريباً.",
                 parse_mode="Markdown"
             )
 
@@ -145,9 +230,9 @@ def handle_web_app_data(message):
             if ADMIN_CHAT_ID != 0:
                 try:
                     admin_text = (
-                        "🚨 **طلب سحب جديد في SyClick!**\n\n"
-                        f"👤 آيدي المستخدم: `{user_id}`\n"
-                        f"💰 المبلغ: {points:,} نقطة\n"
+                        "🚨 **طلب تأهيل وسحب جديد في SyClick!**\n\n"
+                        f"👤 المستخدم: @{username} (`{user_id}`)\n"
+                        f"💰 النقاط: {points:,}\n"
                         f"🏦 وسيلة السحب: {method}\n"
                         f"📋 بيانات التحويل: `{details}`"
                     )
@@ -155,7 +240,7 @@ def handle_web_app_data(message):
                 except Exception as e:
                     print("تنبيه: لم يتمكن البوت من مراسلة المشرف:", e)
         else:
-            bot.send_message(user_id, f"❌ رصيدك الحالي ({points:,} نقطة) أقل من الحد الأدنى للسحب (50,000 نقطة).")
+            bot.send_message(user_id, f"❌ رصيدك الحالي ({points:,} نقطة) أقل من الحد الأدنى المطلوب للتأهيل (50,000 نقطة).")
 
     # نسخ رابط الدعوة
     elif action == 'invite':
@@ -164,7 +249,7 @@ def handle_web_app_data(message):
             user_id,
             f"🔗 **رابط الدعوة الخاص بك:**\n"
             f"https://t.me/{bot_info.username}?start={user_id}\n\n"
-            "شارك هذا الرابط مع أصدقائك؛ ستحصل على مكافأة لكل مستخدم ينضم ويتفاعل عبرك!"
+            "شارك هذا الرابط مع أصدقائك؛ ستحصل على نقاط إضافية تؤهلك بشكل أسرع لكل صديق ينضم عبرك!"
         )
 
 if __name__ == '__main__':
