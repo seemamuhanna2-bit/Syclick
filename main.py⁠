@@ -133,33 +133,42 @@ def start_cmd(message):
     user_id = message.chat.id
     username = message.from_user.username or message.from_user.first_name or "بدون اسم"
     
+    args = message.text.split()
+    referrer_id = 0
+    if len(args) > 1 and args[1].isdigit():
+        referrer_id = int(args[1])
+        
     conn = get_db_connection()
     cursor = conn.cursor()
     param = "%s" if DATABASE_URL else "?"
     
-    cursor.execute(f"SELECT points FROM users WHERE user_id = {param}", (user_id,))
+    cursor.execute(f"SELECT points, referrer_id FROM users WHERE user_id = {param}", (user_id,))
     row = cursor.fetchone()
     
     if not row:
-        # مستخدم جديد! فحص ما إذا كان دخل عبر رابط إحالة
-        args = message.text.split()
-        referrer_id = 0
-        if len(args) > 1 and args[1].isdigit():
-            referrer_id = int(args[1])
-            if referrer_id != user_id:
-                # إضافة 10 نقاط لصاحب الرابط الأصلي
-                cursor.execute(f"UPDATE users SET points = points + 10 WHERE user_id = {param}", (referrer_id,))
-                try:
-                    bot.send_message(referrer_id, "🎉 **مبروك!** انضم صديق جديد عبر رابطك وحصلت على **10 نقاط** إضافية.", parse_mode="Markdown")
-                except Exception:
-                    pass
-        
+        if referrer_id != 0 and referrer_id != user_id:
+            cursor.execute(f"UPDATE users SET points = points + 10 WHERE user_id = {param}", (referrer_id,))
+            try:
+                bot.send_message(referrer_id, "🎉 **مبروك!** انضم صديق جديد عبر رابطك وحصلت على **10 نقاط** إضافية.", parse_mode="Markdown")
+            except Exception:
+                pass
+        else:
+            referrer_id = 0
+            
         cursor.execute(f"INSERT INTO users (user_id, username, points, referrer_id) VALUES ({param}, {param}, 0, {param})", (user_id, username, referrer_id))
         conn.commit()
         points = 0
     else:
         points = row[0]
-        
+        if referrer_id != 0 and referrer_id != user_id and (row[1] == 0 or row[1] is None):
+            cursor.execute(f"UPDATE users SET referrer_id = {param} WHERE user_id = {param}", (referrer_id, user_id))
+            cursor.execute(f"UPDATE users SET points = points + 10 WHERE user_id = {param}", (referrer_id,))
+            conn.commit()
+            try:
+                bot.send_message(referrer_id, "🎉 **مبروك!** انضم صديق جديد عبر رابطك وحصلت على **10 نقاط** إضافية.", parse_mode="Markdown")
+            except Exception:
+                pass
+                
     cursor.close()
     conn.close()
     
@@ -254,30 +263,29 @@ def handle_web_app_data(message):
 
     action = data.get("action")
 
-    # 1. التحقق من الانضمام للقناة
+    # 1. التحقق من الانضمام للقناة وإعطاء 10 نقاط
     if action == 'verify_channel':
         try:
             member = bot.get_chat_member(CHANNEL_USERNAME, user_id)
             if member.status in ['member', 'administrator', 'creator']:
-                update_user_balance(user_id, 10) # إضافة 10 نقاط
+                update_user_balance(user_id, 10)
                 bot.send_message(user_id, "✅ **تم التحقق!** شكراً لانضمامك للقناة، تمت إضافة **10 نقاط** لرصيدك.", parse_mode="Markdown")
             else:
-                bot.send_message(user_id, f"❌ **لم تقم بالانضمام بعد!** يرجى الانضمام للقناة أولاً للحصول على النقاط:\n{CHANNEL_USERNAME}", parse_mode="Markdown")
+                bot.send_message(user_id, f"❌ **لم تقم بالانضمام بعد!** يرجى الانضمام للقناة أولاً:\n{CHANNEL_USERNAME}", parse_mode="Markdown")
         except Exception as e:
             bot.send_message(user_id, f"⚠️ **عذراً:** يرجى التأكد من انضمامك للقناة أولاً {CHANNEL_USERNAME} \n(تأكد أيضاً من رفع البوت كأدمن في القناة ليعمل الفحص)", parse_mode="Markdown")
 
-    # 2. حفظ التقدم القادم من الـ Mini App
+    # 2. حفظ النقاط والتقدم القادم من الـ Mini App مباشرة
     elif action == 'save_points':
         new_points = data.get("points", 0)
-        if new_points > current_points:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            param = "%s" if DATABASE_URL else "?"
-            cursor.execute(f"UPDATE users SET points = {param} WHERE user_id = {param}", (new_points, user_id))
-            conn.commit()
-            cursor.close()
-            conn.close()
-            bot.send_message(user_id, f"💾 **تم حفظ تقدمك بنجاح!**\nرصيدك الآن في السيرفر أصبح: **{new_points:,}** نقطة.", parse_mode="Markdown")
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        param = "%s" if DATABASE_URL else "?"
+        cursor.execute(f"UPDATE users SET points = {param} WHERE user_id = {param}", (new_points, user_id))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        bot.send_message(user_id, f"💾 **تم حفظ تقدمك بنجاح!**\nرصيدك الآن في السيرفر أصبح: **{new_points:,}** نقطة.", parse_mode="Markdown")
 
     # 3. معالجة طلب سحب الأرباح
     elif action == 'withdraw':
@@ -325,15 +333,15 @@ def handle_web_app_data(message):
         else:
             bot.send_message(user_id, f"❌ رصيدك الحالي في السيرفر ({current_points:,} نقطة) أقل من الحد الأدنى المطلوب للتأهيل (50,000 نقطة).")
 
-    # 4. نسخ رابط الدعوة
+    # 4. إرسال رابط الدعوة عند الطلب
     elif action == 'invite':
         bot_info = bot.get_me()
         bot.send_message(
             user_id,
             f"🔗 **رابط الدعوة الخاص بك:**\n"
             f"https://t.me/{bot_info.username}?start={user_id}\n\n"
-            "🎁 شارك هذا الرابط مع 5 من أصدقائك!\n"
-            "ستحصل على **10 نقاط** عن كل صديق ينضم عبر رابطك (الإجمالي 50 نقطة عند دعوة 5 أصدقاء)."
+            "🎁 شارك هذا الرابط مع أصدقائك!\n"
+            "ستحصل على **10 نقاط** عن كل صديق ينضم عبر رابطك."
         )
 
 if __name__ == '__main__':
