@@ -72,7 +72,7 @@
         }
         .btn-action:active { transform: scale(0.97); }
 
-        /* لعبة الذاكرة: 8 بطاقات سريعة وممتعة (4 أزواج) */
+        /* الألعاب والعناصر البصرية الأخرى */
         .memory-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -94,7 +94,6 @@
         .memory-card.flipped { background-color: #0284c7; border-color: #38bdf8; }
         .memory-card.matched { background-color: #10b981; border-color: #34d399; pointer-events: none; }
 
-        /* لعبة النقر السريع (صيد البرق ⚡) */
         .tap-area {
             position: relative;
             height: 160px;
@@ -118,7 +117,6 @@
             box-shadow: 0 0 10px #f59e0b;
         }
 
-        /* عجلة الحظ البصرية الدوارة */
         .wheel-wrapper {
             position: relative;
             width: 170px;
@@ -153,7 +151,6 @@
             z-index: 10;
         }
 
-        /* شريط تقدم المستوى في المحفظة */
         .progress-box {
             background-color: #0f172a;
             border-radius: 10px;
@@ -176,7 +173,6 @@
             transition: width 0.5s ease-in-out;
         }
 
-        /* الشريط السفلي للتنقل */
         .navbar {
             display: flex;
             justify-content: space-around;
@@ -195,25 +191,19 @@
 </head>
 <body>
 
-    <!-- الهيدر العلوي -->
     <div class="header">
         <div class="balance-box">💎 رصيدك: <span id="balance">0</span> نقطة</div>
         <button class="daily-btn" onclick="dailyCheckIn()">📅 استلام الحضور اليومي (+50)</button>
     </div>
 
     <div class="content">
-        
-        <!-- صفحة الألعاب التفاعلية السريعة -->
         <div id="games" class="tab-content active">
-            
-            <!-- 1. لعبة الذاكرة: 8 كروت خفيفة وسريعة -->
             <div class="card">
                 <h3 style="margin: 0; color: #38bdf8;">🧠 تحدي الذاكرة السريعة</h3>
                 <p style="font-size: 13px; color: #94a3b8; margin: 4px 0 8px 0;">اطابق كل زوجين متماثلين لتربح 20 نقطة فوراً!</p>
                 <div class="memory-grid" id="memoryGrid"></div>
             </div>
 
-            <!-- 2. لعبة صيد البرق (النقر السريع) -->
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h3 style="margin: 0; color: #f59e0b;">⚡ تحدي صيد الطاقة</h3>
@@ -226,7 +216,6 @@
                 </div>
             </div>
 
-            <!-- 3. لعبة تخمين الرقم -->
             <div class="card" style="text-align: center;">
                 <h3 style="color: #ec4899; margin-bottom: 5px;">🔢 لعبة تخمين الرقم</h3>
                 <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;">الرقم الحالي: <strong id="currentNum" style="font-size: 20px; color: #fff;">50</strong></p>
@@ -235,10 +224,8 @@
                     <button class="btn-action" style="background-color: #ef4444;" onclick="guessNext(false)">🔽 التالي أصغر</button>
                 </div>
             </div>
-
         </div>
 
-        <!-- صفحة المهام وعجلة الحظ -->
         <div id="tasks" class="tab-content">
             <div class="card" style="text-align: center;">
                 <h3 style="color: #facc15;">🎡 عجلة الحظ اليومية</h3>
@@ -250,25 +237,22 @@
                 <div id="wheelResult" style="margin-top: 10px; font-weight: bold; color: #facc15;"></div>
             </div>
 
-            <div class="card">
-  <h3 style="margin-bottom: 10px;">🔗 مهام الدعم والتفاعل</h3>
-  
-  <!-- 1. قناة التلغرام -->
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-    <span>قناة التليجرام (20+)</span>
-    <button id="btn-telegram" class="daily-btn" onclick="doTelegramTask()">انضمام</button>
-  </div>
+            <!-- تم تعديل الألوان هنا لتصبح واضحة جداً وأرقام النقاط دقيقة -->
+            <div class="card" style="background-color: #0f172a; border: 1px solid #38bdf8;">
+              <h3 style="margin-bottom: 15px; color: #ffffff;">🔗 مهام الدعم والتفاعل</h3>
+              
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: rgba(56, 189, 248, 0.1); padding: 10px; border-radius: 8px;">
+                <span style="color: #ffffff; font-weight: bold;">قناة التليجرام (10+)</span>
+                <button id="btn-telegram" class="daily-btn" style="background: #0284c7;" onclick="doTelegramTask()">انضمام</button>
+              </div>
 
-  <!-- 2. دعوة 5 أصدقاء -->
-  <div style="display: flex; justify-content: space-between; align-items: center;">
-    <span>دعوة 5 أصدقاء (50+)</span>
-    <button id="btn-invite" class="daily-btn" onclick="doInviteTask()">مشاركة الرابط</button>
-  </div>
-
+              <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.1); padding: 10px; border-radius: 8px;">
+                <span style="color: #ffffff; font-weight: bold;">دعوة 5 أصدقاء (50+)</span>
+                <button id="btn-invite" class="daily-btn" style="background: #10b981;" onclick="doInviteTask()">مشاركة الرابط</button>
+              </div>
             </div>
         </div>
 
-        <!-- صفحة المحفظة (شريط تقدم ذكي مع حد سحب غامض) -->
         <div id="wallet" class="tab-content">
             <div class="card" style="text-align: center;">
                 <div style="display: inline-block; background: #0284c7; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 10px;">
@@ -279,7 +263,11 @@
                     نقاطك قيد الاحتساب والتثبيت المستمر. عند إكمال شريط التقدم والتأهل للمستوى الأول، سيتم فتح نافذة سحب الأرباح لحسابك تلقائياً!
                 </p>
 
-                <!-- شريط التقدم الغامض -->
+                <!-- زر حفظ التقدم الجديد للسيرفر -->
+                <button class="btn-action" style="background: #f59e0b; margin-bottom: 15px;" onclick="saveProgressToServer()">
+                    💾 حفظ التقدم في السيرفر
+                </button>
+
                 <div class="progress-box">
                     <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: bold;">
                         <span style="color: #38bdf8;">مدى التقدم للمستوى الأول:</span>
@@ -290,7 +278,6 @@
                     </div>
                 </div>
 
-                <!-- وسائل السحب المحلية لتعزيز المصداقية -->
                 <div style="background: #0f172a; padding: 12px; border-radius: 10px; border: 1px solid #334155; margin-bottom: 15px; text-align: right;">
                     <div style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-bottom: 6px;">🏦 وسائل التحويل المعتمدة:</div>
                     <ul style="font-size: 12px; color: #cbd5e1; list-style-position: inside; line-height: 1.8;">
@@ -300,16 +287,13 @@
                     </ul>
                 </div>
 
-                <!-- زر القفل الذكي -->
                 <button class="btn-action" style="background: #475569; padding: 12px; cursor: pointer;" onclick="showProgressStatus()">
                     🔒 فتح السحب (قيد التأهيل للمستوى الأول)
                 </button>
             </div>
         </div>
-
     </div>
 
-    <!-- شريط التنقل السفلي -->
     <div class="navbar">
         <div class="nav-item active" onclick="switchTab('games', this)">
             <span class="nav-icon">🎮</span>
@@ -354,52 +338,40 @@
             el.classList.add('active');
         }
 
-        /* ================= مهام الدعم والتفاعل والقفل ================= */
         const TELEGRAM_CHANNEL_URL = "https://t.me/Syclickchannel";
 
-        // فحص حالة المهام عند تحميل الصفحة وقفل المنتهي منها فوراً
-        window.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem('task_telegram_done') === 'true') {
-                lockButton('btn-telegram', 'تم الانضمام ✅');
-            }
-        });
-
-        function lockButton(btnId, text) {
-            const btn = document.getElementById(btnId);
-            if (btn) {
-                btn.innerText = text;
-                btn.disabled = true;
-                btn.style.backgroundColor = "#555";
-                btn.style.cursor = "not-allowed";
-                btn.style.opacity = "0.7";
-            }
-        }
-
-        // مهمة الانضمام لقناة التلغرام (+20 نقطة)
+        // مهمة الانضمام لقناة التلغرام (ترسل التحقق للسيرفر)
         function doTelegramTask() {
             window.open(TELEGRAM_CHANNEL_URL, '_blank');
-            
-            // إرسال إشعار للبوت ليفحص الاشتراك عبر السيرفر
             if (window.Telegram && window.Telegram.WebApp) {
-                window.Telegram.WebApp.sendData(JSON.stringify({ action: "check_telegram_sub" }));
+                window.Telegram.WebApp.sendData(JSON.stringify({ action: "verify_channel" }));
+                window.Telegram.WebApp.close();
+            } else {
+                alert("يجب استخدام البوت للتحقق من الانضمام.");
             }
-            
-            localStorage.setItem('task_telegram_done', 'true');
-            lockButton('btn-telegram', 'تم الانضمام ✅');
-            updatePoints(20);
-            alert('🎉 تم فتح القناة! تأكد من اشتراكك، وتمت إضافة 20 نقطة لرصيدك.');
         }
 
-        // مهمة دعوة الأصدقاء (+50 نقطة)
+        // مهمة دعوة الأصدقاء (ترسل طلب إرسال الرابط للسيرفر)
         function doInviteTask() {
             if (window.Telegram && window.Telegram.WebApp) {
                 window.Telegram.WebApp.sendData(JSON.stringify({ action: "invite" }));
-                alert('🚀 أرسل لك البوت رابط الدعوة الخاص بك في المحادثة! شاركه مع 5 أصدقاء.');
+                window.Telegram.WebApp.close();
+            } else {
+                alert("يجب استخدام البوت لدعوة الأصدقاء.");
             }
         }
-        /* ============================================================== */
 
-        /* 1. لعبة الذاكرة: 8 بطاقات سريعة (4 أزواج) */
+        // دالة حفظ التقدم الجديد للسيرفر
+        function saveProgressToServer() {
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.sendData(JSON.stringify({ action: "save_points", points: userPoints }));
+                window.Telegram.WebApp.close();
+            } else {
+                alert("يجب فتح التطبيق من داخل تيليجرام لحفظ التقدم.");
+            }
+        }
+
+        /* ألعاب الذاكرة والنقر (تعمل محلياً بدون تغيير) */
         const symbols = ['⭐', '💎', '🚀', '🔥', '⭐', '💎', '🚀', '🔥'];
         let flipped = [], matchedCount = 0;
 
@@ -445,7 +417,6 @@
         }
         initMemory();
 
-        /* 2. لعبة صيد البرق (النقر السريع) */
         let tapScore = 0, tapTimer, tapMove;
         function startTapGame() {
             tapScore = 0;
@@ -477,14 +448,13 @@
         }
         function hitTarget() { tapScore++; moveTarget(); }
 
-        /* 3. لعبة تخمين الرقم */
         let currentNum = 50;
         function guessNext(isHigher) {
             let nextNum = Math.floor(Math.random() * 100) + 1;
             let win = isHigher ? nextNum >= currentNum : nextNum <= currentNum;
             if (win) {
                 updatePoints(10);
-                alert(`إجابة صحيحة! الرقم التالي كان (${nextNum}). ربحت 10 نقاط!`);
+                alert(`إجابة صحيحة! الرقم التالي كان (${nextNum}). ربحت 10 نقطة!`);
             } else {
                 alert(`للأسف خطأ! الرقم التالي كان (${nextNum}). حاول مجدداً!`);
             }
@@ -492,7 +462,6 @@
             document.getElementById('currentNum').innerText = currentNum;
         }
 
-        /* الحضور اليومي المقفل 24 ساعة */
         function dailyCheckIn() {
             const lastCheck = localStorage.getItem('last_checkin');
             const now = Date.now();
@@ -506,7 +475,6 @@
             alert('🎉 تم استلام هدية الحضور اليومي بنجاح (+50 نقطة)!');
         }
 
-        /* عجلة الحظ مع قفل 24 ساعة وتأثير الدوران الحقيقي */
         let currentRotation = 0;
         function spinWheel() {
             const lastSpin = localStorage.getItem('last_spin');
@@ -516,12 +484,10 @@
                 alert(`⚠️ لديك فرصة تدوير واحدة يومياً! عُد بعد ${hoursLeft} ساعة.`);
                 return;
             }
-
             const prizes = [10, 20, 50, 100, 200];
             const p = prizes[Math.floor(Math.random() * prizes.length)];
             currentRotation += 1440 + Math.floor(Math.random() * 360);
             document.getElementById('wheelCircle').style.transform = `rotate(${currentRotation}deg)`;
-
             setTimeout(() => {
                 localStorage.setItem('last_spin', now);
                 updatePoints(p);
@@ -534,7 +500,6 @@
             alert(`تم تأكيد المهمة وإضافة ${pts} نقطة!`);
         }
 
-        /* تنبيه حالة السحب وشريط التقدم */
         function showProgressStatus() {
             let percent = document.getElementById('progressPercent').innerText;
             alert(`🚀 أنت في مسار التأهيل للإطلاق التجريبي!\nنسبة إنجاز المستوى الأول لديك هي (${percent}).\nواصل جمع النقاط لفتح خيارات السحب عبر شام كاش والهرم والفؤاد فور الإطلاق!`);
