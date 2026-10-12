@@ -338,14 +338,15 @@
             updateProgressBar();
         }
 
-        // تحديث شريط التقدم بنسبة غامضة ومشوقة
-        function updateProgressBar() {
-            // حساب النسبة تدريجياً بحيث تمتلئ ببطء دون كشف رقم النهاية
-            let percent = Math.min(Math.floor((userPoints / 30000) * 100), 98);
-            if (userPoints === 0) percent = 2;
+
+                function updateProgressBar() {
+            const targetPoints = 6000;
+            let percent = Math.min(Math.floor((userPoints / targetPoints) * 100), 98);
+            if (userPoints > 0 && percent < 3) percent = 3;
             document.getElementById('progressPercent').innerText = percent + '%';
             document.getElementById('progressBarFill').style.width = percent + '%';
         }
+
 
         function switchTab(tabId, el) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
