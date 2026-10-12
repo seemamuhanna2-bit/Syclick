@@ -75,6 +75,21 @@
         }
         .btn-action:active { transform: scale(0.97); }
 
+        /* زر شحن الطاقة العملاق */
+        #energyClicker {
+            font-size: 60px;
+            cursor: pointer;
+            user-select: none;
+            display: inline-block;
+            background: #0f172a;
+            padding: 20px;
+            border-radius: 50%;
+            border: 3px solid #facc15;
+            box-shadow: 0 0 20px rgba(250, 204, 21, 0.4);
+            transition: transform 0.1s;
+        }
+        #energyClicker:active { transform: scale(0.9); box-shadow: 0 0 5px rgba(250, 204, 21, 0.8); }
+
         /* لعبة الذاكرة */
         .memory-grid {
             display: grid;
@@ -96,21 +111,6 @@
         }
         .memory-card.flipped { background-color: #0284c7; border-color: #38bdf8; }
         .memory-card.matched { background-color: #10b981; border-color: #34d399; pointer-events: none; }
-
-        /* زر شحن الطاقة العملاق */
-        #energyClicker {
-            font-size: 60px;
-            cursor: pointer;
-            user-select: none;
-            display: inline-block;
-            background: #0f172a;
-            padding: 20px;
-            border-radius: 50%;
-            border: 3px solid #facc15;
-            box-shadow: 0 0 20px rgba(250, 204, 21, 0.4);
-            transition: transform 0.1s;
-        }
-        #energyClicker:active { transform: scale(0.9); box-shadow: 0 0 5px rgba(250, 204, 21, 0.8); }
 
         /* لعبة إكس أو (XO) */
         .xo-grid {
@@ -136,6 +136,33 @@
         }
         .xo-cell.x { color: #38bdf8; }
         .xo-cell.o { color: #f43f5e; }
+
+        /* لعبة الألماسات المتساقطة */
+        .df-area {
+            position: relative;
+            height: 220px;
+            background-color: #0f172a;
+            border: 2px dashed #475569;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 15px;
+            touch-action: none; /* لمنع تمرير الشاشة أثناء اللعب */
+            display: none;
+        }
+        .df-basket {
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 35px;
+            pointer-events: none;
+            transition: transform 0.1s;
+        }
+        .df-item {
+            position: absolute;
+            font-size: 26px;
+            pointer-events: none;
+        }
 
         /* عجلة الحظ */
         .wheel-wrapper {
@@ -222,14 +249,21 @@
     <div class="content">
         <div id="games" class="tab-content active">
             
-            <!-- زر شحن الطاقة -->
+            <!-- 1. زر شحن الطاقة -->
             <div class="card" style="text-align: center;">
                 <h3 style="color: #f59e0b; margin-bottom: 5px;">🔋 شحن الطاقة</h3>
-                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">انقر على الزر لتعبئة خزان الطاقة (كل نقرة +5 طاقة)</p>
+                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">انقر لتعبئة خزان الطاقة (كل نقرة +50 طاقة)</p>
                 <div id="energyClicker" onclick="chargeEnergy()">⚡</div>
             </div>
 
-            <!-- لعبة إكس أو (XO) الذكية -->
+            <!-- 2. لعبة الذاكرة (كشف الكروت) -->
+            <div class="card">
+                <h3 style="margin: 0; color: #38bdf8;">🧠 تحدي الذاكرة (50 طاقة)</h3>
+                <p style="font-size: 13px; color: #94a3b8; margin: 4px 0 8px 0;">طابق كل زوجين متماثلين لتربح 20 نقطة فوراً!</p>
+                <div class="memory-grid" id="memoryGrid"></div>
+            </div>
+
+            <!-- 3. لعبة إكس أو (XO) الذكية -->
             <div class="card" style="text-align: center;">
                 <h3 style="color: #ec4899; margin-bottom: 5px;">❌ إكس أو (50 طاقة)</h3>
                 <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;">العب ضد البوت الذكي، الفوز يمنحك 30 نقطة!</p>
@@ -237,26 +271,20 @@
                 <div class="xo-grid" id="xoGrid"></div>
             </div>
 
-            <!-- لعبة حجرة ورقة مقص التفاعلية -->
+            <!-- 4. لعبة الألماسات المتساقطة -->
             <div class="card" style="text-align: center;">
-                <h3 style="color: #10b981; margin-bottom: 5px;">✌️ حجرة ورقة مقص (50 طاقة)</h3>
-                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;">اغلب البوت واربح 20 نقطة!</p>
+                <h3 style="color: #10b981; margin-bottom: 5px;">💎 صيد الألماسات (50 طاقة)</h3>
+                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;">حرك السلة بإصبعك، اجمع الألماسات وتجنب القنابل!</p>
                 
-                <button class="btn-action" id="startRpsBtn" style="background-color: #10b981; width: auto; padding: 8px 20px; margin-bottom: 15px;" onclick="startRPS()">بدء التحدي</button>
+                <button class="btn-action" id="startDfBtn" style="background-color: #10b981; width: auto; padding: 8px 20px;" onclick="startFallingDiamonds()">بدء الصيد الآن</button>
                 
-                <div id="rpsButtons" style="display: flex; justify-content: space-around; font-size: 35px; opacity: 0.4; pointer-events: none; transition: 0.3s;">
-                    <div style="cursor: pointer; background: #334155; padding: 10px; border-radius: 50%; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border: 2px solid #475569;" onclick="playRPS('✊')">✊</div>
-                    <div style="cursor: pointer; background: #334155; padding: 10px; border-radius: 50%; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border: 2px solid #475569;" onclick="playRPS('✋')">✋</div>
-                    <div style="cursor: pointer; background: #334155; padding: 10px; border-radius: 50%; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; border: 2px solid #475569;" onclick="playRPS('✌️')">✌️</div>
+                <div class="df-area" id="dfArea">
+                    <div style="display: flex; justify-content: space-between; padding: 5px 10px; font-weight: bold; color: #f8fafc; font-size: 14px;">
+                        <span id="dfTime">الوقت: 15 ث</span>
+                        <span id="dfScore" style="color: #facc15;">النقاط: 0</span>
+                    </div>
+                    <div class="df-basket" id="dfBasket">🧺</div>
                 </div>
-                <div id="rpsResult" style="margin-top: 15px; font-weight: bold; font-size: 16px; color: #f8fafc; transition: 0.3s; min-height: 24px;"></div>
-            </div>
-
-            <!-- لعبة الذاكرة -->
-            <div class="card">
-                <h3 style="margin: 0; color: #38bdf8;">🧠 تحدي الذاكرة (50 طاقة)</h3>
-                <p style="font-size: 13px; color: #94a3b8; margin: 4px 0 8px 0;">طابق كل زوجين متماثلين لتربح 20 نقطة فوراً!</p>
-                <div class="memory-grid" id="memoryGrid"></div>
             </div>
 
         </div>
@@ -275,12 +303,10 @@
 
             <div class="card" style="background-color: #0f172a; border: 1px solid #38bdf8;">
               <h3 style="margin-bottom: 15px; color: #ffffff;">🔗 مهام الدعم والتفاعل</h3>
-              
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: rgba(56, 189, 248, 0.1); padding: 10px; border-radius: 8px;">
                 <span style="color: #ffffff; font-weight: bold; font-size: 14px;">قناة التليجرام (10+)</span>
                 <button id="btn-telegram" class="daily-btn" style="background: #0284c7;" onclick="doTelegramTask()">انضمام</button>
               </div>
-
               <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.1); padding: 10px; border-radius: 8px;">
                 <span style="color: #ffffff; font-weight: bold; font-size: 13px; max-width: 65%;">دعوة صديق (يصل لـ 100 نقطة لتربح 100)</span>
                 <button id="btn-invite" class="daily-btn" style="background: #10b981;" onclick="doInviteTask()">دعوة</button>
@@ -298,7 +324,6 @@
                     نقاطك قيد الاحتساب. لتأكيد حسابك وضمان إحالاتك، تأكد من الحفظ المستمر!
                 </p>
 
-                <!-- زر حفظ التقدم للسيرفر -->
                 <button class="btn-action" style="background: #f59e0b; margin-bottom: 15px; padding: 15px;" onclick="saveProgressToServer()">
                     💾 حفظ التقدم في السيرفر (مهم جداً)
                 </button>
@@ -348,7 +373,7 @@
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        /* نظام النقاط */
+        /* ================= نظام النقاط ================= */
         let userPoints = parseInt(localStorage.getItem('syclick_points')) || 0;
         updatePoints(0);
 
@@ -367,7 +392,7 @@
             document.getElementById('progressBarFill').style.width = percent + '%';
         }
 
-        /* نظام الطاقة */
+        /* ================= نظام الطاقة ================= */
         let userEnergy = parseInt(localStorage.getItem('syclick_energy'));
         if (isNaN(userEnergy)) userEnergy = 1000;
         updateEnergy(0);
@@ -380,17 +405,18 @@
             document.getElementById('energy').innerText = userEnergy;
         }
 
+        // تم التعديل لتصبح النقرة الواحدة تعطي 50 طاقة كما طلبتِ
         function chargeEnergy() {
             const btn = document.getElementById('energyClicker');
             btn.style.transform = 'scale(0.9)';
             setTimeout(() => btn.style.transform = 'scale(1)', 100);
             
             if (userEnergy < 1000) {
-                updateEnergy(5);
+                updateEnergy(50);
             }
         }
 
-        /* تبديل الصفحات */
+        /* ================= تبديل الصفحات والمهام ================= */
         function switchTab(tabId, el) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -398,9 +424,8 @@
             el.classList.add('active');
         }
 
-        /* الروابط والسيرفر */
         const TELEGRAM_CHANNEL_URL = "https://t.me/Syclickchannel";
-        const BOT_USERNAME = "SyclickBot"; // يوزر بوتك بدون علامة @
+        const BOT_USERNAME = "SyclickBot"; // تأكدي من وضع يوزر بوتك الحقيقي هنا
 
         function doTelegramTask() {
             if (window.Telegram && window.Telegram.WebApp) {
@@ -428,170 +453,7 @@
             }
         }
 
-        /* =================== لعبة حجرة ورقة مقص (المطورة) =================== */
-        let isRpsActive = false;
-
-        function startRPS() {
-            if (userEnergy < 50) return alert("⚠️ طاقتك لا تكفي (تحتاج 50)! انقر على زر الطاقة لتعبئتها.");
-            updateEnergy(-50);
-            
-            document.getElementById('startRpsBtn').style.display = 'none';
-            const rpsResult = document.getElementById('rpsResult');
-            const rpsButtons = document.getElementById('rpsButtons');
-            
-            rpsResult.style.color = '#facc15';
-            rpsResult.innerText = "3️⃣...";
-            
-            setTimeout(() => { rpsResult.innerText = "2️⃣..."; }, 800);
-            setTimeout(() => { rpsResult.innerText = "1️⃣..."; }, 1600);
-            
-            setTimeout(() => {
-                rpsResult.style.color = '#38bdf8';
-                rpsResult.innerText = "🔥 اختر الآن بسرعة! 🔥";
-                rpsButtons.style.opacity = '1';
-                rpsButtons.style.pointerEvents = 'auto';
-                isRpsActive = true;
-            }, 2400);
-        }
-
-        function playRPS(playerChoice) {
-            if (!isRpsActive) return;
-            isRpsActive = false;
-            
-            const rpsButtons = document.getElementById('rpsButtons');
-            rpsButtons.style.opacity = '0.4';
-            rpsButtons.style.pointerEvents = 'none';
-            
-            const startBtn = document.getElementById('startRpsBtn');
-            startBtn.style.display = 'inline-block';
-            startBtn.innerText = 'العب مرة أخرى (50 طاقة)';
-
-            const choices = ['✊', '✋', '✌️'];
-            const botChoice = choices[Math.floor(Math.random() * 3)];
-            let resultText = "";
-            const rpsResult = document.getElementById('rpsResult');
-            
-            if (playerChoice === botChoice) {
-                resultText = `🤝 تعادل! البوت اختار ${botChoice}`;
-                rpsResult.style.color = '#94a3b8';
-            } else if (
-                (playerChoice === '✊' && botChoice === '✌️') ||
-                (playerChoice === '✋' && botChoice === '✊') ||
-                (playerChoice === '✌️' && botChoice === '✋')
-            ) {
-                resultText = `🎉 فزت! البوت اختار ${botChoice}. (+20 نقطة)`;
-                rpsResult.style.color = '#10b981';
-                updatePoints(20);
-            } else {
-                resultText = `❌ خسرت! البوت اختار ${botChoice}`;
-                rpsResult.style.color = '#ef4444';
-            }
-            
-            rpsResult.innerText = resultText;
-        }
-
-        /* =================== لعبة إكس أو الذكية (XO) =================== */
-        let boardXO = ['','','','','','','','',''];
-        let isGameActiveXO = false;
-
-        function startXO() {
-            if (userEnergy < 50) return alert("⚠️ طاقتك لا تكفي (تحتاج 50)! انقر على زر الطاقة لتعبئتها.");
-            updateEnergy(-50);
-            boardXO = ['','','','','','','','',''];
-            isGameActiveXO = true;
-            renderXO();
-        }
-
-        function renderXO() {
-            const grid = document.getElementById('xoGrid');
-            grid.innerHTML = '';
-            boardXO.forEach((cell, index) => {
-                const div = document.createElement('div');
-                div.className = `xo-cell ${cell === 'X' ? 'x' : (cell === 'O' ? 'o' : '')}`;
-                div.innerText = cell;
-                div.onclick = () => makeMoveXO(index);
-                grid.appendChild(div);
-            });
-        }
-
-        function checkWinXO(player) {
-            const winConditions = [
-                [0, 1, 2], [3, 4, 5], [6, 7, 8],
-                [0, 3, 6], [1, 4, 7], [2, 5, 8],
-                [0, 4, 8], [2, 4, 6]
-            ];
-            return winConditions.some(comb => comb.every(idx => boardXO[idx] === player));
-        }
-
-        // ذكاء البوت الجديد
-        function getBestMoveXO() {
-            const winConditions = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-            
-            // 1. محاولة الفوز
-            for (let comb of winConditions) {
-                let oCount = 0, emptyIdx = -1;
-                for (let idx of comb) {
-                    if (boardXO[idx] === 'O') oCount++;
-                    else if (boardXO[idx] === '') emptyIdx = idx;
-                }
-                if (oCount === 2 && emptyIdx !== -1) return emptyIdx;
-            }
-            
-            // 2. الدفاع وقطع الطريق على اللاعب
-            for (let comb of winConditions) {
-                let xCount = 0, emptyIdx = -1;
-                for (let idx of comb) {
-                    if (boardXO[idx] === 'X') xCount++;
-                    else if (boardXO[idx] === '') emptyIdx = idx;
-                }
-                if (xCount === 2 && emptyIdx !== -1) return emptyIdx;
-            }
-            
-            // 3. السيطرة على المنتصف
-            if (boardXO[4] === '') return 4;
-            
-            // 4. اختيار عشوائي لما تبقى
-            let emptyCells = boardXO.map((val, idx) => val === '' ? idx : null).filter(val => val !== null);
-            return emptyCells[Math.floor(Math.random() * emptyCells.length)];
-        }
-
-        function makeMoveXO(index) {
-            if (!isGameActiveXO || boardXO[index] !== '') return;
-            
-            boardXO[index] = 'X';
-            renderXO();
-            
-            if (checkWinXO('X')) {
-                isGameActiveXO = false;
-                updatePoints(30);
-                setTimeout(() => alert("🎉 بطل! لقد فزت بذكاء (+30 نقطة)"), 100);
-                return;
-            }
-            
-            if (!boardXO.includes('')) {
-                isGameActiveXO = false;
-                setTimeout(() => alert("🤝 تعادل! لا أحد فاز."), 100);
-                return; // إنهاء الجولة فوراً لمنع البوت من اللعب وتصحيح الخطأ
-            }
-            
-            // حركة البوت الذكية
-            setTimeout(() => {
-                let botIdx = getBestMoveXO();
-                boardXO[botIdx] = 'O';
-                renderXO();
-                
-                if (checkWinXO('O')) {
-                    isGameActiveXO = false;
-                    setTimeout(() => alert("🤖 البوت الذكي غلبك! حظاً أوفر."), 100);
-                } else if (!boardXO.includes('')) {
-                    isGameActiveXO = false;
-                    setTimeout(() => alert("🤝 تعادل! لا أحد فاز."), 100);
-                }
-            }, 300);
-        }
-        renderXO();
-
-        /* =================== لعبة الذاكرة =================== */
+        /* ================= 1. لعبة الذاكرة (كشف الكروت) ================= */
         const symbols = ['⭐', '💎', '🚀', '🔥', '⭐', '💎', '🚀', '🔥'];
         let flipped = [], matchedCount = 0;
         let memoryRoundStarted = false;
@@ -646,7 +508,215 @@
         }
         initMemory();
 
-        /* =================== عجلة الحظ =================== */
+        /* ================= 2. لعبة إكس أو الذكية (XO) ================= */
+        let boardXO = ['','','','','','','','',''];
+        let isGameActiveXO = false;
+
+        function startXO() {
+            if (userEnergy < 50) return alert("⚠️ طاقتك لا تكفي (تحتاج 50)! انقر على زر الطاقة لتعبئتها.");
+            updateEnergy(-50);
+            boardXO = ['','','','','','','','',''];
+            isGameActiveXO = true;
+            renderXO();
+        }
+
+        function renderXO() {
+            const grid = document.getElementById('xoGrid');
+            grid.innerHTML = '';
+            boardXO.forEach((cell, index) => {
+                const div = document.createElement('div');
+                div.className = `xo-cell ${cell === 'X' ? 'x' : (cell === 'O' ? 'o' : '')}`;
+                div.innerText = cell;
+                div.onclick = () => makeMoveXO(index);
+                grid.appendChild(div);
+            });
+        }
+
+        function checkWinXO(player) {
+            const winConditions = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+            return winConditions.some(comb => comb.every(idx => boardXO[idx] === player));
+        }
+
+        function getBestMoveXO() {
+            const winConditions = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            for (let comb of winConditions) {
+                let oCount = 0, emptyIdx = -1;
+                for (let idx of comb) {
+                    if (boardXO[idx] === 'O') oCount++;
+                    else if (boardXO[idx] === '') emptyIdx = idx;
+                }
+                if (oCount === 2 && emptyIdx !== -1) return emptyIdx;
+            }
+            for (let comb of winConditions) {
+                let xCount = 0, emptyIdx = -1;
+                for (let idx of comb) {
+                    if (boardXO[idx] === 'X') xCount++;
+                    else if (boardXO[idx] === '') emptyIdx = idx;
+                }
+                if (xCount === 2 && emptyIdx !== -1) return emptyIdx;
+            }
+            if (boardXO[4] === '') return 4;
+            let emptyCells = boardXO.map((val, idx) => val === '' ? idx : null).filter(val => val !== null);
+            return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+        }
+
+        function makeMoveXO(index) {
+            if (!isGameActiveXO || boardXO[index] !== '') return;
+            boardXO[index] = 'X';
+            renderXO();
+            
+            if (checkWinXO('X')) {
+                isGameActiveXO = false;
+                updatePoints(30);
+                setTimeout(() => alert("🎉 بطل! لقد فزت بذكاء (+30 نقطة)"), 100);
+                return;
+            }
+            if (!boardXO.includes('')) {
+                isGameActiveXO = false;
+                setTimeout(() => alert("🤝 تعادل! لا أحد فاز."), 100);
+                return;
+            }
+            
+            setTimeout(() => {
+                let botIdx = getBestMoveXO();
+                boardXO[botIdx] = 'O';
+                renderXO();
+                
+                if (checkWinXO('O')) {
+                    isGameActiveXO = false;
+                    setTimeout(() => alert("🤖 البوت الذكي غلبك! حظاً أوفر."), 100);
+                } else if (!boardXO.includes('')) {
+                    isGameActiveXO = false;
+                    setTimeout(() => alert("🤝 تعادل! لا أحد فاز."), 100);
+                }
+            }, 300);
+        }
+        renderXO();
+
+        /* ================= 3. لعبة صيد الألماسات ================= */
+        let dfGameInterval, dfSpawnInterval, dfTimerInterval;
+        let dfScore = 0, dfTime = 15;
+        let isDfPlaying = false;
+        const dfArea = document.getElementById('dfArea');
+        const dfBasket = document.getElementById('dfBasket');
+        const dfScoreEl = document.getElementById('dfScore');
+        const dfTimeEl = document.getElementById('dfTime');
+
+        // تحريك السلة عند اللمس أو السحب
+        dfArea.addEventListener('touchmove', (e) => {
+            if(!isDfPlaying) return;
+            let rect = dfArea.getBoundingClientRect();
+            let x = e.touches[0].clientX - rect.left;
+            if(x < 20) x = 20;
+            if(x > rect.width - 20) x = rect.width - 20;
+            dfBasket.style.left = x + 'px';
+            e.preventDefault(); // لمنع تحرك الشاشة
+        }, {passive: false});
+        
+        dfArea.addEventListener('mousemove', (e) => {
+            if(!isDfPlaying) return;
+            let rect = dfArea.getBoundingClientRect();
+            let x = e.clientX - rect.left;
+            if(x < 20) x = 20;
+            if(x > rect.width - 20) x = rect.width - 20;
+            dfBasket.style.left = x + 'px';
+        });
+
+        function startFallingDiamonds() {
+            if (userEnergy < 50) return alert("⚠️ طاقتك لا تكفي (تحتاج 50)! انقر على زر الطاقة لتعبئتها.");
+            updateEnergy(-50);
+            
+            document.getElementById('startDfBtn').style.display = 'none';
+            dfArea.style.display = 'block';
+            dfScore = 0;
+            dfTime = 15;
+            dfScoreEl.innerText = `النقاط: ${dfScore}`;
+            dfTimeEl.innerText = `الوقت: ${dfTime} ث`;
+            isDfPlaying = true;
+            
+            document.querySelectorAll('.df-item').forEach(e => e.remove());
+            dfBasket.style.left = '50%';
+
+            dfSpawnInterval = setInterval(spawnDiamondOrBomb, 500);
+            dfGameInterval = setInterval(updateFallingItems, 30);
+            
+            dfTimerInterval = setInterval(() => {
+                dfTime--;
+                dfTimeEl.innerText = `الوقت: ${dfTime} ث`;
+                if(dfTime <= 0) endFallingDiamonds();
+            }, 1000);
+        }
+
+        function spawnDiamondOrBomb() {
+            let item = document.createElement('div');
+            item.className = 'df-item';
+            let isBomb = Math.random() < 0.25; // نسبة 25% قنابل
+            item.innerText = isBomb ? '💣' : '💎';
+            item.dataset.type = isBomb ? 'bomb' : 'diamond';
+            let rect = dfArea.getBoundingClientRect();
+            item.style.left = Math.floor(Math.random() * (rect.width - 30)) + 15 + 'px';
+            item.style.top = '-30px';
+            dfArea.appendChild(item);
+        }
+
+        function updateFallingItems() {
+            let items = document.querySelectorAll('.df-item');
+            let basketRect = dfBasket.getBoundingClientRect();
+            let areaRect = dfArea.getBoundingClientRect();
+
+            items.forEach(item => {
+                let top = parseFloat(item.style.top);
+                top += 4; // سرعة السقوط
+                item.style.top = top + 'px';
+                
+                let itemRect = item.getBoundingClientRect();
+                
+                // فحص التصادم بين السلة والعنصر
+                if (
+                    itemRect.bottom >= basketRect.top &&
+                    itemRect.top <= basketRect.bottom &&
+                    itemRect.right >= basketRect.left &&
+                    itemRect.left <= basketRect.right
+                ) {
+                    if (item.dataset.type === 'diamond') {
+                        dfScore += 2; // +2 لكل ألماسة
+                        dfScoreEl.innerText = `النقاط: ${dfScore}`;
+                    } else {
+                        dfScore = Math.max(0, dfScore - 3); // -3 لكل قنبلة
+                        dfScoreEl.innerText = `النقاط: ${dfScore}`;
+                        dfBasket.style.transform = 'translateX(-50%) scale(1.2)';
+                        setTimeout(() => dfBasket.style.transform = 'translateX(-50%) scale(1)', 150);
+                    }
+                    item.remove();
+                } else if (top > areaRect.height) {
+                    item.remove();
+                }
+            });
+        }
+
+        function endFallingDiamonds() {
+            isDfPlaying = false;
+            clearInterval(dfSpawnInterval);
+            clearInterval(dfGameInterval);
+            clearInterval(dfTimerInterval);
+            
+            dfArea.style.display = 'none';
+            document.getElementById('startDfBtn').style.display = 'inline-block';
+            
+            if (dfScore > 0) {
+                updatePoints(dfScore);
+                alert(`🎉 انتهى الوقت! لقد جمعت ${dfScore} نقطة! تمت إضافتها لرصيدك.`);
+            } else {
+                alert(`⏱️ انتهى الوقت! للأسف لم تجمع أي نقاط، حظاً أوفر في المرة القادمة.`);
+            }
+            document.querySelectorAll('.df-item').forEach(e => e.remove());
+        }
+
+        /* ================= عجلة الحظ والحضور اليومي ================= */
         let currentRotation = 0;
         function spinWheel() {
             if (userEnergy < 70) return alert("⚠️ طاقتك لا تكفي (تحتاج 70)! انقر على زر الطاقة لتعبئتها.");
@@ -671,7 +741,6 @@
             }, 3600);
         }
 
-        /* الحضور اليومي */
         function dailyCheckIn() {
             const lastCheck = localStorage.getItem('last_checkin');
             const now = Date.now();
