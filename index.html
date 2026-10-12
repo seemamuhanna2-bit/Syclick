@@ -237,7 +237,7 @@
                 <div id="wheelResult" style="margin-top: 10px; font-weight: bold; color: #facc15;"></div>
             </div>
 
-            <!-- تم تعديل الألوان هنا لتصبح واضحة جداً وأرقام النقاط دقيقة -->
+            <!-- مهام الدعم والتفاعل بخلفية واضحة جداً -->
             <div class="card" style="background-color: #0f172a; border: 1px solid #38bdf8;">
               <h3 style="margin-bottom: 15px; color: #ffffff;">🔗 مهام الدعم والتفاعل</h3>
               
@@ -263,7 +263,7 @@
                     نقاطك قيد الاحتساب والتثبيت المستمر. عند إكمال شريط التقدم والتأهل للمستوى الأول، سيتم فتح نافذة سحب الأرباح لحسابك تلقائياً!
                 </p>
 
-                <!-- زر حفظ التقدم الجديد للسيرفر -->
+                <!-- زر حفظ التقدم للسيرفر -->
                 <button class="btn-action" style="background: #f59e0b; margin-bottom: 15px;" onclick="saveProgressToServer()">
                     💾 حفظ التقدم في السيرفر
                 </button>
@@ -339,29 +339,29 @@
         }
 
         const TELEGRAM_CHANNEL_URL = "https://t.me/Syclickchannel";
+        const BOT_USERNAME = "SyclickBot"; // يوزر بوتك على التليجرام (بدون علامة @)
 
-        // مهمة الانضمام لقناة التلغرام (ترسل التحقق للسيرفر)
+        // 1. مهمة قناة التليجرام (تفتح القناة وترسل طلب التحقق للسيرفر)
         function doTelegramTask() {
-            window.open(TELEGRAM_CHANNEL_URL, '_blank');
             if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.openTelegramLink(TELEGRAM_CHANNEL_URL);
                 window.Telegram.WebApp.sendData(JSON.stringify({ action: "verify_channel" }));
-                window.Telegram.WebApp.close();
-            } else {
-                alert("يجب استخدام البوت للتحقق من الانضمام.");
             }
         }
 
-        // مهمة دعوة الأصدقاء (ترسل طلب إرسال الرابط للسيرفر)
+        // 2. مهمة دعوة الأصدقاء (تفتح نافذة المشاركة الرسمية في تيليجرام مع رابط الإحالة)
         function doInviteTask() {
             if (window.Telegram && window.Telegram.WebApp) {
-                window.Telegram.WebApp.sendData(JSON.stringify({ action: "invite" }));
-                window.Telegram.WebApp.close();
-            } else {
-                alert("يجب استخدام البوت لدعوة الأصدقاء.");
+                const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id || '';
+                const inviteUrl = `https://t.me/${BOT_USERNAME}?start=${userId}`;
+                const shareText = encodeURIComponent("🚀 انضم إلينا في منصة SyClick واجمع النقاط واربح معنا!");
+                const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${shareText}`;
+                
+                window.Telegram.WebApp.openTelegramLink(shareUrl);
             }
         }
 
-        // دالة حفظ التقدم الجديد للسيرفر
+        // 3. دالة حفظ التقدم في السيرفر
         function saveProgressToServer() {
             if (window.Telegram && window.Telegram.WebApp) {
                 window.Telegram.WebApp.sendData(JSON.stringify({ action: "save_points", points: userPoints }));
@@ -371,7 +371,7 @@
             }
         }
 
-        /* ألعاب الذاكرة والنقر (تعمل محلياً بدون تغيير) */
+        /* الألعاب والعناصر الأخرى */
         const symbols = ['⭐', '💎', '🚀', '🔥', '⭐', '💎', '🚀', '🔥'];
         let flipped = [], matchedCount = 0;
 
