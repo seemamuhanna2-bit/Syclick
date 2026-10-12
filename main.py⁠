@@ -6,7 +6,7 @@ import telebot
 from telebot import types
 import sqlite3
 
-# خادم الويب لإبقاء البوت نشطاً على منصة Render
+# خادم الويب لإبقاء البوت نشطاً على Render
 app = Flask('')
 
 @app.route('/')
@@ -21,14 +21,13 @@ def keep_alive():
     t = Thread(target=run_web)
     t.start()
 
-# ================= الإعدادات =================
+# ================= الإعدادات الأمنية =================
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 CHANNEL_USERNAME = "@Syclickchannel"
 
-# ضعي رقم الآيدي الخاص بكِ هنا بين الرقمين (بدون إشارات تنصيص)
-# يمكنكِ جلبه من بوت @userinfobot
-ADMIN_CHAT_ID = 000000000  
-# ============================================
+# قراءة الآيدي بأمان من Render دون كتابته علناً في GitHub
+ADMIN_CHAT_ID = int(os.environ.get("ADMIN_CHAT_ID", 0))
+# ====================================================
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
@@ -112,7 +111,7 @@ def handle_web_app_data(message):
 
     action = data.get("action")
 
-    # معالجة طلب سحب الأرباح (الحد الأدنى 50 ألف نقطة)
+    # معالجة طلب سحب الأرباح
     if action == 'withdraw':
         method_names = {
             "sham_cash": "شام كاش",
@@ -131,7 +130,7 @@ def handle_web_app_data(message):
             conn.commit()
             conn.close()
 
-            # إشعار للمستخدم بتأكيد استلام طلبه
+            # إشعار للمستخدم
             bot.send_message(
                 user_id,
                 f"✅ **تم تسجيل طلب السحب بنجاح!**\n\n"
@@ -142,7 +141,7 @@ def handle_web_app_data(message):
                 parse_mode="Markdown"
             )
 
-            # إشعار مباشر يصل إلى حسابكِ الشخصي فوراً
+            # إشعار مباشر للإدارة
             if ADMIN_CHAT_ID != 0:
                 try:
                     admin_text = (
@@ -167,12 +166,6 @@ def handle_web_app_data(message):
             f"https://t.me/{bot_info.username}?start={user_id}\n\n"
             "شارك هذا الرابط مع أصدقائك؛ ستحصل على مكافأة لكل مستخدم ينضم ويتفاعل عبرك!"
         )
-# كشف الآيدي عند إرسال أي رسالة
-@bot.message_handler(func=lambda message: True)
-def echo_all(message):
-    user_id = message.chat.id
-    print(f"====== MY_CHAT_ID: {user_id} ======")
-    bot.reply_to(message, f"رقم الآيدي الخاص بك هو:\n`{user_id}`", parse_mode="Markdown")
 
 if __name__ == '__main__':
     keep_alive()
