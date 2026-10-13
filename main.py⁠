@@ -31,15 +31,12 @@ CHANNEL_USERNAME = "@Syclickchannel"
 ADMIN_CHAT_ID = int(os.environ.get("ADMIN_CHAT_ID", 0))
 
 # ================= روابط المهام الإعلانية =================
-# رابط تعبئة الطاقة
 ENERGY_LINK = "https://asiafilm.org/4/28ae26723b23f2ba73d5dbca12ad6103"
 ENERGY_REWARD = 200
 
-# رابط المهام
 TASKS_LINK = "https://asiafilm.org/4/c3c6a248133c8cb9603460a7b6fa3eef"
 TASKS_REWARD = 250
 
-# وقت الانتظار المطلوب بالثواني لضمان احتساب الأرباح
 WAIT_TIME = 20
 # ====================================================
 
@@ -407,8 +404,22 @@ def handle_web_app_data(message):
         conn = get_db_connection()
         cursor = conn.cursor()
         param = "%s" if DATABASE_URL else "?"
-        cursor.execute(f"UPDATE users SET points = {param} WHERE user_id = {param}", (new_points, user_id))
         
+        # التعديل الجذري لضمان حفظ وتحديث المستخدم سواء كان موجوداً مسبقاً أم لا
+        if DATABASE_URL:
+            cursor.execute(f"""
+                INSERT INTO users (user_id, username, points, energy) 
+                VALUES ({param}, {param}, {param}, 1000)
+                ON CONFLICT (user_id) 
+                DO UPDATE SET points = {param}, username = {param}
+            """, (user_id, username, new_points, new_points, username))
+        else:
+            cursor.execute(f"SELECT user_id FROM users WHERE user_id = {param}", (user_id,))
+            if not cursor.fetchone():
+                cursor.execute(f"INSERT INTO users (user_id, username, points, energy) VALUES ({param}, {param}, {param}, 1000)", (user_id, username, new_points))
+            else:
+                cursor.execute(f"UPDATE users SET points = {param}, username = {param} WHERE user_id = {param}", (new_points, username, user_id))
+
         cursor.execute(f"SELECT referrer_id FROM users WHERE user_id = {param}", (user_id,))
         referrer_row = cursor.fetchone()
         
