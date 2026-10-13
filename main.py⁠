@@ -28,6 +28,15 @@ def keep_alive():
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 CHANNEL_USERNAME = "@Syclickchannel"
 ADMIN_CHAT_ID = int(os.environ.get("ADMIN_CHAT_ID", 0))
+
+# ================= روابط المهام الإعلانية =================
+# رابط تعبئة الطاقة
+ENERGY_LINK = "https://asiafilm.org/4/28ae26723b23f2ba73d5dbca12ad6103"
+ENERGY_REWARD = 200
+
+# رابط المهام
+TASKS_LINK = "https://asiafilm.org/4/c3c6a248133c8cb9603460a7b6fa3eef"
+TASKS_REWARD = 250
 # ====================================================
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -52,8 +61,10 @@ def init_db():
                 user_id BIGINT PRIMARY KEY,
                 username TEXT,
                 points BIGINT DEFAULT 0,
+                energy BIGINT DEFAULT 1000,
                 referrer_id BIGINT DEFAULT 0,
-                joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                channel_joined BOOLEAN DEFAULT FALSE
             )
         ''')
         cursor.execute('''
@@ -66,19 +77,26 @@ def init_db():
                 status TEXT DEFAULT 'pending'
             )
         ''')
-        # إضافة عمود حماية القناة بدون حذف البيانات الحالية
+        # إضافة أعمدة الطاقة وحماية القناة في حال لم تكن موجودة
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN energy BIGINT DEFAULT 1000")
+        except Exception:
+            pass
         try:
             cursor.execute("ALTER TABLE users ADD COLUMN channel_joined BOOLEAN DEFAULT FALSE")
         except Exception:
-            conn.rollback() # العمود موجود مسبقاً
+            pass
+
     else:
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 user_id INTEGER PRIMARY KEY,
                 username TEXT,
                 points INTEGER DEFAULT 0,
+                energy INTEGER DEFAULT 1000,
                 referrer_id INTEGER DEFAULT 0,
-                joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                channel_joined BOOLEAN DEFAULT 0
             )
         ''')
         cursor.execute('''
@@ -91,6 +109,10 @@ def init_db():
                 status TEXT DEFAULT 'pending'
             )
         ''')
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN energy INTEGER DEFAULT 1000")
+        except Exception:
+            pass
         try:
             cursor.execute("ALTER TABLE users ADD COLUMN channel_joined BOOLEAN DEFAULT 0")
         except Exception:
@@ -106,30 +128,33 @@ def get_user(user_id, username=""):
     conn = get_db_connection()
     cursor = conn.cursor()
     param = "%s" if DATABASE_URL else "?"
-    cursor.execute(f"SELECT points, referrer_id FROM users WHERE user_id = {param}", (user_id,))
+    cursor.execute(f"SELECT points, referrer_id, energy FROM users WHERE user_id = {param}", (user_id,))
     row = cursor.fetchone()
     if not row:
-        cursor.execute(f"INSERT INTO users (user_id, username, points) VALUES ({param}, {param}, 0)", (user_id, username))
+        cursor.execute(f"INSERT INTO users (user_id, username, points, energy) VALUES ({param}, {param}, 0, 1000)", (user_id, username))
         conn.commit()
-        row = (0, 0)
+        row = (0, 0, 1000)
     cursor.close()
     conn.close()
     return row
 
-def update_user_balance(user_id, points_delta=0):
+def update_user_balance(user_id, points_delta=0, energy_delta=0):
     conn = get_db_connection()
     cursor = conn.cursor()
     param = "%s" if DATABASE_URL else "?"
-    cursor.execute(f"UPDATE users SET points = points + {param} WHERE user_id = {param}", (points_delta, user_id))
+    cursor.execute(f"UPDATE users SET points = points + {param}, energy = energy + {param} WHERE user_id = {param}", (points_delta, energy_delta, user_id))
     conn.commit()
     cursor.close()
     conn.close()
 
 def main_keyboard():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     webapp_url = "https://seemamuhanna2-bit.github.io/Syclick/"
     btn_webapp = types.KeyboardButton(text="🚀 فتح منصة SyClick", web_app=types.WebAppInfo(url=webapp_url))
+    btn_energy = types.KeyboardButton(text="🔋 تعبئة الطاقة")
+    btn_tasks = types.KeyboardButton(text="💰 المهام الإضافية")
     markup.add(btn_webapp)
+    markup.add(btn_energy, btn_tasks)
     return markup
 
 @bot.message_handler(commands=['start'])
@@ -146,20 +171,20 @@ def start_cmd(message):
     cursor = conn.cursor()
     param = "%s" if DATABASE_URL else "?"
     
-    cursor.execute(f"SELECT points, referrer_id FROM users WHERE user_id = {param}", (user_id,))
+    cursor.execute(f"SELECT points, referrer_id, energy FROM users WHERE user_id = {param}", (user_id,))
     row = cursor.fetchone()
     
     if not row:
-        # تسجيل المستخدم مع حفظ كود الإحالة بدون إعطاء نقاط حالياً
         if referrer_id == user_id:
             referrer_id = 0
             
-        cursor.execute(f"INSERT INTO users (user_id, username, points, referrer_id) VALUES ({param}, {param}, 0, {param})", (user_id, username, referrer_id))
+        cursor.execute(f"INSERT INTO users (user_id, username, points, energy, referrer_id) VALUES ({param}, {param}, 0, 1000, {param})", (user_id, username, referrer_id))
         conn.commit()
         points = 0
+        energy = 1000
     else:
         points = row[0]
-        # إذا كان المستخدم قديماً ودخل من رابط ولم يكن لديه مُحيل مسبق
+        energy = row[2]
         if referrer_id != 0 and referrer_id != user_id and (row[1] == 0 or row[1] is None):
             cursor.execute(f"UPDATE users SET referrer_id = {param} WHERE user_id = {param}", (referrer_id, user_id))
             conn.commit()
@@ -170,8 +195,9 @@ def start_cmd(message):
     text = (
         "🚀 **أهلاً بك في منصة SyClick** 🚀\n\n"
         "المنصة التفاعلية لتنفيذ مهام التأهيل وجمع النقاط والانطلاق بالعمل الرقمي.\n\n"
-        f"💎 رصيدك الحالي في السيرفر: **{points:,}** نقطة\n\n"
-        "اضغط على الزر أدناه لفتح المنصة والبدء 👇"
+        f"💎 رصيدك الحالي: **{points:,}** نقطة\n"
+        f"⚡️ طاقتك الحالية: **{energy:,}** طاقة\n\n"
+        "اختر من القائمة أدناه 👇"
     )
     bot.send_message(user_id, text, reply_markup=main_keyboard(), parse_mode="Markdown")
 
@@ -235,6 +261,74 @@ def admin_users_cmd(message):
     if report:
         bot.send_message(message.chat.id, report, parse_mode="Markdown")
 
+@bot.message_handler(func=lambda message: message.text == "🔋 تعبئة الطاقة")
+def fill_energy_cmd(message):
+    user_id = message.chat.id
+    
+    markup = types.InlineKeyboardMarkup()
+    btn_watch = types.InlineKeyboardButton("شاهد إعلان لتعبئة الطاقة 🔋", url=ENERGY_LINK)
+    btn_claim = types.InlineKeyboardButton("✅ استلام الطاقة", callback_data="claim_energy")
+    markup.add(btn_watch)
+    markup.add(btn_claim)
+    
+    text = (
+        "🔋 **تعبئة الطاقة**\n\n"
+        "لزيادة طاقتك واستمرار اللعب، اضغط على الرزر أدناه لمشاهدة الإعلان.\n"
+        f"ستحصل على **{ENERGY_REWARD} طاقة** إضافية عند المشاهدة."
+    )
+    bot.send_message(user_id, text, reply_markup=markup, parse_mode="Markdown")
+
+@bot.message_handler(func=lambda message: message.text == "💰 المهام الإضافية")
+def extra_tasks_cmd(message):
+    user_id = message.chat.id
+    
+    markup = types.InlineKeyboardMarkup()
+    btn_watch = types.InlineKeyboardButton("شاهد الإعلان لكسب النقاط 💰", url=TASKS_LINK)
+    btn_claim = types.InlineKeyboardButton("✅ استلام النقاط", callback_data="claim_tasks")
+    markup.add(btn_watch)
+    markup.add(btn_claim)
+    
+    text = (
+        "💰 **المهام الإضافية**\n\n"
+        "شاهد الإعلان بالكامل واضغط على زر الاستلام لجمع النقاط.\n"
+        f"المكافأة: **{TASKS_REWARD} نقطة** تضاف لرصيدك الأساسي."
+    )
+    bot.send_message(user_id, text, reply_markup=markup, parse_mode="Markdown")
+
+@bot.callback_query_handler(func=lambda call: call.data in ["claim_energy", "claim_tasks"])
+def handle_claim_callbacks(call):
+    user_id = call.from_user.id
+    action = call.data
+    
+    bot.answer_callback_query(call.id, "جاري التحقق من المشاهدة...")
+    
+    if action == "claim_energy":
+        update_user_balance(user_id, points_delta=0, energy_delta=ENERGY_REWARD)
+        
+        user_data = get_user(user_id)
+        current_energy = user_data[2]
+        
+        bot.edit_message_text(
+            chat_id=user_id,
+            message_id=call.message.message_id,
+            text=f"✅ **تمت تعبئة طاقتك بنجاح!**\nاكتسبت {ENERGY_REWARD} طاقة.\nطاقتك الحالية: {current_energy:,}",
+            parse_mode="Markdown"
+        )
+        
+    elif action == "claim_tasks":
+        update_user_balance(user_id, points_delta=TASKS_REWARD, energy_delta=0)
+        
+        user_data = get_user(user_id)
+        current_points = user_data[0]
+        
+        bot.edit_message_text(
+            chat_id=user_id,
+            message_id=call.message.message_id,
+            text=f"✅ **تم استلام المكافأة بنجاح!**\nاكتسبت {TASKS_REWARD} نقطة.\nرصيدك الحالي: {current_points:,}",
+            parse_mode="Markdown"
+        )
+
+
 @bot.message_handler(content_types=['web_app_data'])
 def handle_web_app_data(message):
     data_str = message.web_app_data.data
@@ -248,7 +342,6 @@ def handle_web_app_data(message):
 
     action = data.get("action")
 
-    # 1. الانضمام للقناة مع سد ثغرة التكرار
     if action == 'verify_channel':
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -257,9 +350,8 @@ def handle_web_app_data(message):
         cursor.execute(f"SELECT channel_joined FROM users WHERE user_id = {param}", (user_id,))
         row = cursor.fetchone()
         
-        # إذا لم يكن مسجلاً، نقوم بإنشاء سجل له
         if not row:
-            cursor.execute(f"INSERT INTO users (user_id, username, points) VALUES ({param}, {param}, 0)", (user_id, username))
+            cursor.execute(f"INSERT INTO users (user_id, username, points, energy) VALUES ({param}, {param}, 0, 1000)", (user_id, username))
             conn.commit()
             already_joined = False
         else:
@@ -282,11 +374,9 @@ def handle_web_app_data(message):
         cursor.close()
         conn.close()
 
-    # 2. حفظ النقاط ومعالجة نظام الإحالة الآمن
     elif action == 'save_points':
         new_points = data.get("points", 0)
         
-        # حماية من الأرقام الخيالية (أكثر من 150 ألف نقطة تعتبر تلاعباً)
         if new_points < 0 or new_points > 150000:
             bot.send_message(user_id, "❌ خطأ في مزامنة البيانات، يرجى المحاولة لاحقاً.")
             return
@@ -295,19 +385,15 @@ def handle_web_app_data(message):
         cursor = conn.cursor()
         param = "%s" if DATABASE_URL else "?"
         
-        # تحديث رصيد اللاعب
         cursor.execute(f"UPDATE users SET points = {param} WHERE user_id = {param}", (new_points, user_id))
         
-        # فحص الإحالة: هل تجاوز 100 نقطة ولديه مُحيل؟
         cursor.execute(f"SELECT referrer_id FROM users WHERE user_id = {param}", (user_id,))
         referrer_row = cursor.fetchone()
         
         if referrer_row and referrer_row[0] != 0:
             referrer_id = referrer_row[0]
             if new_points >= 100:
-                # إعطاء الجائزة للمُحيل
                 cursor.execute(f"UPDATE users SET points = points + 100 WHERE user_id = {param}", (referrer_id,))
-                # مسح الإحالة لسد الثغرة
                 cursor.execute(f"UPDATE users SET referrer_id = 0 WHERE user_id = {param}", (user_id,))
                 try:
                     bot.send_message(referrer_id, f"🎉 **مبروك!** صديقك الذي دعوته أتم 100 نقطة، وحصلت أنت على **100 نقطة** مكافأة الإحالة!", parse_mode="Markdown")
@@ -319,7 +405,6 @@ def handle_web_app_data(message):
         conn.close()
         bot.send_message(user_id, f"💾 **تم حفظ تقدمك بنجاح!**\nرصيدك الآن في السيرفر أصبح: **{new_points:,}** نقطة.", parse_mode="Markdown")
 
-    # 3. معالجة طلب سحب الأرباح
     elif action == 'withdraw':
         user_data = get_user(user_id, username)
         current_points = user_data[0]
