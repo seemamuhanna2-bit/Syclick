@@ -75,7 +75,7 @@
         }
         .btn-action:active { transform: scale(0.97); }
 
-        /* زر شحن الطاقة العملاق */
+        /* زر شحن الطاقة العملاق - تم التعديل */
         #energyClicker {
             font-size: 60px;
             cursor: pointer;
@@ -88,7 +88,13 @@
             box-shadow: 0 0 20px rgba(250, 204, 21, 0.4);
             transition: transform 0.1s;
         }
-        #energyClicker:active { transform: scale(0.9); box-shadow: 0 0 5px rgba(250, 204, 21, 0.8); }
+        #energyClicker.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: #475569;
+            box-shadow: none;
+        }
+        #energyClicker:not(.disabled):active { transform: scale(0.9); box-shadow: 0 0 5px rgba(250, 204, 21, 0.8); }
 
         /* لعبة الذاكرة */
         .memory-grid {
@@ -146,7 +152,7 @@
             border-radius: 12px;
             overflow: hidden;
             margin-top: 15px;
-            touch-action: none; /* لمنع تمرير الشاشة أثناء اللعب */
+            touch-action: none;
             display: none;
         }
         .df-basket {
@@ -249,11 +255,14 @@
     <div class="content">
         <div id="games" class="tab-content active">
             
-            <!-- 1. زر شحن الطاقة -->
+            <!-- 1. زر الاستهلاك (النقرة) -->
             <div class="card" style="text-align: center;">
-                <h3 style="color: #f59e0b; margin-bottom: 5px;">🔋 شحن الطاقة</h3>
-                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">انقر لتعبئة خزان الطاقة (كل نقرة +50 طاقة)</p>
-                <div id="energyClicker" onclick="chargeEnergy()">⚡</div>
+                <h3 style="color: #38bdf8; margin-bottom: 5px;">👆 النقر المتواصل</h3>
+                <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">كل نقرة تسحب 1 طاقة وتعطيك 1 نقطة!</p>
+                <div id="energyClicker" onclick="clickToEarn()">💎</div>
+                <p id="energyAlert" style="color: #f43f5e; font-size: 13px; margin-top: 15px; font-weight: bold; display: none;">
+                    ⚠️ طاقتك نفدت! عُد إلى البوت وشاهد إعلاناً لتعبئة الطاقة.
+                </p>
             </div>
 
             <!-- 2. لعبة الذاكرة (كشف الكروت) -->
@@ -395,25 +404,57 @@
         /* ================= نظام الطاقة ================= */
         let userEnergy = parseInt(localStorage.getItem('syclick_energy'));
         if (isNaN(userEnergy)) userEnergy = 1000;
-        updateEnergy(0);
+        updateEnergyDisplay();
+        checkEnergyState();
 
         function updateEnergy(amount) {
             userEnergy += amount;
             if (userEnergy > 1000) userEnergy = 1000;
             if (userEnergy < 0) userEnergy = 0;
             localStorage.setItem('syclick_energy', userEnergy);
+            updateEnergyDisplay();
+            checkEnergyState();
+        }
+        
+        function updateEnergyDisplay() {
             document.getElementById('energy').innerText = userEnergy;
         }
-
-        // تم التعديل لتصبح النقرة الواحدة تعطي 50 طاقة كما طلبتِ
-        function chargeEnergy() {
+        
+        function checkEnergyState() {
             const btn = document.getElementById('energyClicker');
-            btn.style.transform = 'scale(0.9)';
-            setTimeout(() => btn.style.transform = 'scale(1)', 100);
+            const alertMsg = document.getElementById('energyAlert');
             
-            if (userEnergy < 1000) {
-                updateEnergy(50);
+            if (userEnergy <= 0) {
+                btn.classList.add('disabled');
+                alertMsg.style.display = 'block';
+            } else {
+                btn.classList.remove('disabled');
+                alertMsg.style.display = 'none';
             }
+        }
+
+        // دالة النقر للحصول على النقاط واستهلاك الطاقة
+        function clickToEarn() {
+            if (userEnergy <= 0) {
+                // إظهار تنبيه إذا كانت الطاقة صفر
+                if (window.Telegram && window.Telegram.WebApp) {
+                    window.Telegram.WebApp.showAlert("⚠️ طاقتك نفدت! عُد إلى البوت واضغط على زر 'تعبئة الطاقة' لمشاهدة الإعلان.");
+                } else {
+                    alert("⚠️ طاقتك نفدت! عُد إلى البوت وشاهد إعلاناً لتعبئة الطاقة.");
+                }
+                return;
+            }
+            
+            // التأثير البصري للزر
+            const btn = document.getElementById('energyClicker');
+            if(!btn.classList.contains('disabled')) {
+                btn.style.transform = 'scale(0.9)';
+                setTimeout(() => btn.style.transform = 'scale(1)', 100);
+            }
+            
+            // خصم 1 طاقة وإضافة 1 نقطة
+            updateEnergy(-1);
+            updatePoints(1);
         }
 
         /* ================= تبديل الصفحات والمهام ================= */
@@ -472,7 +513,10 @@
                 card.dataset.sym = sym;
                 card.onclick = () => {
                     if (!memoryRoundStarted) {
-                        if (userEnergy < 50) return alert("⚠️ طاقتك لا تكفي (تحتاج 50)! انقر على زر الطاقة لتعبئتها.");
+                        if (userEnergy < 50) {
+                            alert("⚠️ طاقتك لا تكفي (تحتاج 50)! عُد للبوت وشاهد إعلاناً لتعبئة الطاقة.");
+                            return;
+                        }
                         updateEnergy(-50);
                         memoryRoundStarted = true;
                     }
@@ -513,7 +557,10 @@
         let isGameActiveXO = false;
 
         function startXO() {
-            if (userEnergy < 50) return alert("⚠️ طاقتك لا تكفي (تحتاج 50)! انقر على زر الطاقة لتعبئتها.");
+            if (userEnergy < 50) {
+                alert("⚠️ طاقتك لا تكفي (تحتاج 50)! عُد للبوت وشاهد إعلاناً لتعبئة الطاقة.");
+                return;
+            }
             updateEnergy(-50);
             boardXO = ['','','','','','','','',''];
             isGameActiveXO = true;
@@ -606,7 +653,6 @@
         const dfScoreEl = document.getElementById('dfScore');
         const dfTimeEl = document.getElementById('dfTime');
 
-        // تحريك السلة عند اللمس أو السحب
         dfArea.addEventListener('touchmove', (e) => {
             if(!isDfPlaying) return;
             let rect = dfArea.getBoundingClientRect();
@@ -614,7 +660,7 @@
             if(x < 20) x = 20;
             if(x > rect.width - 20) x = rect.width - 20;
             dfBasket.style.left = x + 'px';
-            e.preventDefault(); // لمنع تحرك الشاشة
+            e.preventDefault(); 
         }, {passive: false});
         
         dfArea.addEventListener('mousemove', (e) => {
@@ -627,7 +673,10 @@
         });
 
         function startFallingDiamonds() {
-            if (userEnergy < 50) return alert("⚠️ طاقتك لا تكفي (تحتاج 50)! انقر على زر الطاقة لتعبئتها.");
+            if (userEnergy < 50) {
+                alert("⚠️ طاقتك لا تكفي (تحتاج 50)! عُد للبوت وشاهد إعلاناً لتعبئة الطاقة.");
+                return;
+            }
             updateEnergy(-50);
             
             document.getElementById('startDfBtn').style.display = 'none';
@@ -654,7 +703,7 @@
         function spawnDiamondOrBomb() {
             let item = document.createElement('div');
             item.className = 'df-item';
-            let isBomb = Math.random() < 0.25; // نسبة 25% قنابل
+            let isBomb = Math.random() < 0.25; 
             item.innerText = isBomb ? '💣' : '💎';
             item.dataset.type = isBomb ? 'bomb' : 'diamond';
             let rect = dfArea.getBoundingClientRect();
@@ -670,12 +719,11 @@
 
             items.forEach(item => {
                 let top = parseFloat(item.style.top);
-                top += 4; // سرعة السقوط
+                top += 4; 
                 item.style.top = top + 'px';
                 
                 let itemRect = item.getBoundingClientRect();
                 
-                // فحص التصادم بين السلة والعنصر
                 if (
                     itemRect.bottom >= basketRect.top &&
                     itemRect.top <= basketRect.bottom &&
@@ -683,10 +731,10 @@
                     itemRect.left <= basketRect.right
                 ) {
                     if (item.dataset.type === 'diamond') {
-                        dfScore += 2; // +2 لكل ألماسة
+                        dfScore += 2; 
                         dfScoreEl.innerText = `النقاط: ${dfScore}`;
                     } else {
-                        dfScore = Math.max(0, dfScore - 3); // -3 لكل قنبلة
+                        dfScore = Math.max(0, dfScore - 3); 
                         dfScoreEl.innerText = `النقاط: ${dfScore}`;
                         dfBasket.style.transform = 'translateX(-50%) scale(1.2)';
                         setTimeout(() => dfBasket.style.transform = 'translateX(-50%) scale(1)', 150);
@@ -719,7 +767,10 @@
         /* ================= عجلة الحظ والحضور اليومي ================= */
         let currentRotation = 0;
         function spinWheel() {
-            if (userEnergy < 70) return alert("⚠️ طاقتك لا تكفي (تحتاج 70)! انقر على زر الطاقة لتعبئتها.");
+            if (userEnergy < 70) {
+                alert("⚠️ طاقتك لا تكفي (تحتاج 70)! عُد للبوت وشاهد إعلاناً لتعبئة الطاقة.");
+                return;
+            }
 
             const lastSpin = localStorage.getItem('last_spin');
             const now = Date.now();
