@@ -1,5 +1,6 @@
 import os
 import json
+import time
 from flask import Flask
 from threading import Thread
 import telebot
@@ -37,9 +38,15 @@ ENERGY_REWARD = 200
 # رابط المهام
 TASKS_LINK = "https://asiafilm.org/4/c3c6a248133c8cb9603460a7b6fa3eef"
 TASKS_REWARD = 250
+
+# وقت الانتظار المطلوب بالثواني لضمان احتساب الأرباح
+WAIT_TIME = 20
 # ====================================================
 
 bot = telebot.TeleBot(BOT_TOKEN)
+
+# قاموس لتخزين وقت بدء المهمة لكل لاعب
+user_tasks = {}
 
 def get_db_connection():
     if DATABASE_URL:
@@ -77,7 +84,6 @@ def init_db():
                 status TEXT DEFAULT 'pending'
             )
         ''')
-        # إضافة أعمدة الطاقة وحماية القناة في حال لم تكن موجودة
         try:
             cursor.execute("ALTER TABLE users ADD COLUMN energy BIGINT DEFAULT 1000")
         except Exception:
@@ -86,7 +92,6 @@ def init_db():
             cursor.execute("ALTER TABLE users ADD COLUMN channel_joined BOOLEAN DEFAULT FALSE")
         except Exception:
             pass
-
     else:
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
@@ -177,7 +182,6 @@ def start_cmd(message):
     if not row:
         if referrer_id == user_id:
             referrer_id = 0
-            
         cursor.execute(f"INSERT INTO users (user_id, username, points, energy, referrer_id) VALUES ({param}, {param}, 0, 1000, {param})", (user_id, username, referrer_id))
         conn.commit()
         points = 0
@@ -224,7 +228,6 @@ def admin_cmd(message):
         f"⏳ **طلبات السحب المعلقة:** {pending_withdrawals}\n\n"
         "🏆 **أعلى 5 متصدرين حالياً:**\n"
     )
-
     for idx, p in enumerate(top_players, 1):
         uname = f"@{p[1]}" if p[1] and p[1] != "بدون اسم" else f"`{p[0]}`"
         report += f"{idx}. {uname} ➔ **{p[2]:,}** نقطة\n"
@@ -252,7 +255,6 @@ def admin_users_cmd(message):
     for idx, p in enumerate(all_users, 1):
         uname = p[1] if p[1] else "بدون اسم"
         line = f"{idx}. {uname} (`{p[0]}`) ➔ {p[2]:,} نقطة\n"
-        
         if len(report) + len(line) > 3800:
             bot.send_message(message.chat.id, report, parse_mode="Markdown")
             report = ""
@@ -265,6 +267,11 @@ def admin_users_cmd(message):
 def fill_energy_cmd(message):
     user_id = message.chat.id
     
+    # تسجيل وقت طلب المهمة
+    if user_id not in user_tasks:
+        user_tasks[user_id] = {}
+    user_tasks[user_id]['energy'] = time.time()
+    
     markup = types.InlineKeyboardMarkup()
     btn_watch = types.InlineKeyboardButton("شاهد إعلان لتعبئة الطاقة 🔋", url=ENERGY_LINK)
     btn_claim = types.InlineKeyboardButton("✅ استلام الطاقة", callback_data="claim_energy")
@@ -273,14 +280,20 @@ def fill_energy_cmd(message):
     
     text = (
         "🔋 **تعبئة الطاقة**\n\n"
-        "لزيادة طاقتك واستمرار اللعب، اضغط على الرزر أدناه لمشاهدة الإعلان.\n"
-        f"ستحصل على **{ENERGY_REWARD} طاقة** إضافية عند المشاهدة."
+        "لزيادة طاقتك واستمرار اللعب، اضغط على الزر أدناه لمشاهدة الإعلان.\n"
+        f"⚠️ **ملاحظة هامة:** يجب البقاء في صفحة الإعلان لمدة {WAIT_TIME} ثانية على الأقل ليتم احتساب المكافأة.\n\n"
+        f"ستحصل على **{ENERGY_REWARD} طاقة** إضافية."
     )
     bot.send_message(user_id, text, reply_markup=markup, parse_mode="Markdown")
 
 @bot.message_handler(func=lambda message: message.text == "💰 المهام الإضافية")
 def extra_tasks_cmd(message):
     user_id = message.chat.id
+    
+    # تسجيل وقت طلب المهمة
+    if user_id not in user_tasks:
+        user_tasks[user_id] = {}
+    user_tasks[user_id]['tasks'] = time.time()
     
     markup = types.InlineKeyboardMarkup()
     btn_watch = types.InlineKeyboardButton("شاهد الإعلان لكسب النقاط 💰", url=TASKS_LINK)
@@ -290,7 +303,8 @@ def extra_tasks_cmd(message):
     
     text = (
         "💰 **المهام الإضافية**\n\n"
-        "شاهد الإعلان بالكامل واضغط على زر الاستلام لجمع النقاط.\n"
+        "اضغط على الزر أدناه لمشاهدة العرض.\n"
+        f"⚠️ **ملاحظة هامة:** يجب البقاء في صفحة العرض لمدة {WAIT_TIME} ثانية على الأقل للتأكد من إتمام المهمة.\n\n"
         f"المكافأة: **{TASKS_REWARD} نقطة** تضاف لرصيدك الأساسي."
     )
     bot.send_message(user_id, text, reply_markup=markup, parse_mode="Markdown")
@@ -299,12 +313,22 @@ def extra_tasks_cmd(message):
 def handle_claim_callbacks(call):
     user_id = call.from_user.id
     action = call.data
-    
-    bot.answer_callback_query(call.id, "جاري التحقق من المشاهدة...")
+    now = time.time()
     
     if action == "claim_energy":
-        update_user_balance(user_id, points_delta=0, energy_delta=ENERGY_REWARD)
+        start_time = user_tasks.get(user_id, {}).get('energy', 0)
         
+        # التحقق من مرور الوقت المطلوب
+        if start_time == 0 or (now - start_time) < WAIT_TIME:
+            bot.answer_callback_query(call.id, f"❌ لم تكتمل مشاهدة الإعلان! يجب البقاء في الصفحة {WAIT_TIME} ثانية على الأقل.", show_alert=True)
+            return
+            
+        bot.answer_callback_query(call.id, "✅ جاري تحديث طاقتك...")
+        
+        # تصفير العداد لمنع الاستلام المزدوج لنفس الإعلان
+        user_tasks[user_id]['energy'] = 0
+        
+        update_user_balance(user_id, points_delta=0, energy_delta=ENERGY_REWARD)
         user_data = get_user(user_id)
         current_energy = user_data[2]
         
@@ -316,8 +340,19 @@ def handle_claim_callbacks(call):
         )
         
     elif action == "claim_tasks":
-        update_user_balance(user_id, points_delta=TASKS_REWARD, energy_delta=0)
+        start_time = user_tasks.get(user_id, {}).get('tasks', 0)
         
+        # التحقق من مرور الوقت المطلوب
+        if start_time == 0 or (now - start_time) < WAIT_TIME:
+            bot.answer_callback_query(call.id, f"❌ لم تكتمل المهمة! يجب البقاء في صفحة العرض {WAIT_TIME} ثانية على الأقل.", show_alert=True)
+            return
+            
+        bot.answer_callback_query(call.id, "✅ جاري تحديث رصيدك...")
+        
+        # تصفير العداد لمنع الاستلام المزدوج لنفس المهمة
+        user_tasks[user_id]['tasks'] = 0
+        
+        update_user_balance(user_id, points_delta=TASKS_REWARD, energy_delta=0)
         user_data = get_user(user_id)
         current_points = user_data[0]
         
@@ -327,7 +362,6 @@ def handle_claim_callbacks(call):
             text=f"✅ **تم استلام المكافأة بنجاح!**\nاكتسبت {TASKS_REWARD} نقطة.\nرصيدك الحالي: {current_points:,}",
             parse_mode="Markdown"
         )
-
 
 @bot.message_handler(content_types=['web_app_data'])
 def handle_web_app_data(message):
@@ -346,7 +380,6 @@ def handle_web_app_data(message):
         conn = get_db_connection()
         cursor = conn.cursor()
         param = "%s" if DATABASE_URL else "?"
-        
         cursor.execute(f"SELECT channel_joined FROM users WHERE user_id = {param}", (user_id,))
         row = cursor.fetchone()
         
@@ -370,13 +403,11 @@ def handle_web_app_data(message):
                     bot.send_message(user_id, f"❌ **لم تقم بالانضمام بعد!** يرجى الانضمام للقناة أولاً:\n{CHANNEL_USERNAME}", parse_mode="Markdown")
             except Exception as e:
                 bot.send_message(user_id, f"⚠️ **عذراً:** يرجى التأكد من انضمامك للقناة أولاً {CHANNEL_USERNAME} \n(تأكد أيضاً من رفع البوت كأدمن في القناة)", parse_mode="Markdown")
-        
         cursor.close()
         conn.close()
 
     elif action == 'save_points':
         new_points = data.get("points", 0)
-        
         if new_points < 0 or new_points > 150000:
             bot.send_message(user_id, "❌ خطأ في مزامنة البيانات، يرجى المحاولة لاحقاً.")
             return
@@ -384,7 +415,6 @@ def handle_web_app_data(message):
         conn = get_db_connection()
         cursor = conn.cursor()
         param = "%s" if DATABASE_URL else "?"
-        
         cursor.execute(f"UPDATE users SET points = {param} WHERE user_id = {param}", (new_points, user_id))
         
         cursor.execute(f"SELECT referrer_id FROM users WHERE user_id = {param}", (user_id,))
@@ -399,7 +429,6 @@ def handle_web_app_data(message):
                     bot.send_message(referrer_id, f"🎉 **مبروك!** صديقك الذي دعوته أتم 100 نقطة، وحصلت أنت على **100 نقطة** مكافأة الإحالة!", parse_mode="Markdown")
                 except Exception:
                     pass
-
         conn.commit()
         cursor.close()
         conn.close()
