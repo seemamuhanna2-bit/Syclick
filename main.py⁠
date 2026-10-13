@@ -267,7 +267,6 @@ def admin_users_cmd(message):
 def fill_energy_cmd(message):
     user_id = message.chat.id
     
-    # تسجيل وقت طلب المهمة
     if user_id not in user_tasks:
         user_tasks[user_id] = {}
     user_tasks[user_id]['energy'] = time.time()
@@ -290,7 +289,6 @@ def fill_energy_cmd(message):
 def extra_tasks_cmd(message):
     user_id = message.chat.id
     
-    # تسجيل وقت طلب المهمة
     if user_id not in user_tasks:
         user_tasks[user_id] = {}
     user_tasks[user_id]['tasks'] = time.time()
@@ -318,14 +316,11 @@ def handle_claim_callbacks(call):
     if action == "claim_energy":
         start_time = user_tasks.get(user_id, {}).get('energy', 0)
         
-        # التحقق من مرور الوقت المطلوب
         if start_time == 0 or (now - start_time) < WAIT_TIME:
             bot.answer_callback_query(call.id, f"❌ لم تكتمل مشاهدة الإعلان! يجب البقاء في الصفحة {WAIT_TIME} ثانية على الأقل.", show_alert=True)
             return
             
         bot.answer_callback_query(call.id, "✅ جاري تحديث طاقتك...")
-        
-        # تصفير العداد لمنع الاستلام المزدوج لنفس الإعلان
         user_tasks[user_id]['energy'] = 0
         
         update_user_balance(user_id, points_delta=0, energy_delta=ENERGY_REWARD)
@@ -342,14 +337,11 @@ def handle_claim_callbacks(call):
     elif action == "claim_tasks":
         start_time = user_tasks.get(user_id, {}).get('tasks', 0)
         
-        # التحقق من مرور الوقت المطلوب
         if start_time == 0 or (now - start_time) < WAIT_TIME:
             bot.answer_callback_query(call.id, f"❌ لم تكتمل المهمة! يجب البقاء في صفحة العرض {WAIT_TIME} ثانية على الأقل.", show_alert=True)
             return
             
         bot.answer_callback_query(call.id, "✅ جاري تحديث رصيدك...")
-        
-        # تصفير العداد لمنع الاستلام المزدوج لنفس المهمة
         user_tasks[user_id]['tasks'] = 0
         
         update_user_balance(user_id, points_delta=TASKS_REWARD, energy_delta=0)
