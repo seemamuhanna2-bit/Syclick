@@ -75,7 +75,7 @@
         }
         .btn-action:active { transform: scale(0.97); }
 
-        /* زر شحن الطاقة العملاق - تم التعديل */
+        /* زر شحن الطاقة العملاق */
         #energyClicker {
             font-size: 60px;
             cursor: pointer;
@@ -255,13 +255,21 @@
     <div class="content">
         <div id="games" class="tab-content active">
             
+            <!-- قسم إعلانات أدستيرا المدمجة داخل الويب آلاف -->
+            <div class="card" style="text-align: center; background: #0f172a; border: 1px dashed #38bdf8;">
+                <p style="font-size: 12px; color: #38bdf8; margin-bottom: 8px;">📢 إعلان ممول داعم للمنصة</p>
+                <a href="https://asiafilm.org/4/28ae26723b23f2ba73d5dbca12ad6103" target="_blank" style="display: block; background: #1e293b; color: #facc15; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 13px;">
+                    اضغط هنا لزيارة العرض الترويجي ودعم التطوير 🚀
+                </a>
+            </div>
+
             <!-- 1. زر الاستهلاك (النقرة) -->
             <div class="card" style="text-align: center;">
                 <h3 style="color: #38bdf8; margin-bottom: 5px;">👆 النقر المتواصل</h3>
                 <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">كل نقرة تسحب 1 طاقة وتعطيك 1 نقطة!</p>
                 <div id="energyClicker" onclick="clickToEarn()">💎</div>
                 <p id="energyAlert" style="color: #f43f5e; font-size: 13px; margin-top: 15px; font-weight: bold; display: none;">
-                    ⚠️ طاقتك نفدت! عُد إلى البوت وشاهد إعلاناً لتعبئة الطاقة.
+                    ⚠️ طاقتك نفدت! <a href="https://asiafilm.org/4/28ae26723b23f2ba73d5dbca12ad6103" target="_blank" style="color: #facc15; text-decoration: underline;">اضغط هنا لشحن طاقتك عبر الإعلان</a>
                 </p>
             </div>
 
@@ -316,9 +324,14 @@
                 <span style="color: #ffffff; font-weight: bold; font-size: 14px;">قناة التليجرام (10+)</span>
                 <button id="btn-telegram" class="daily-btn" style="background: #0284c7;" onclick="doTelegramTask()">انضمام</button>
               </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.1); padding: 10px; border-radius: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: rgba(16, 185, 129, 0.1); padding: 10px; border-radius: 8px;">
                 <span style="color: #ffffff; font-weight: bold; font-size: 13px; max-width: 65%;">دعوة صديق (يصل لـ 100 نقطة لتربح 100)</span>
                 <button id="btn-invite" class="daily-btn" style="background: #10b981;" onclick="doInviteTask()">دعوة</button>
+              </div>
+              <!-- زر المهام الإعلانية الثاني (أدستيرا) -->
+              <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(245, 158, 11, 0.1); padding: 10px; border-radius: 8px;">
+                <span style="color: #ffffff; font-weight: bold; font-size: 13px; max-width: 65%;">مهام أدستيرا الإضافية (100 نقطة)</span>
+                <a href="https://asiafilm.org/4/c3c6a248133c8cb9603460a7b6fa3eef" target="_blank" class="daily-btn" style="background: #f59e0b; text-decoration: none; text-align: center;">تنفيذ</a>
               </div>
             </div>
         </div>
@@ -378,7 +391,7 @@
         </div>
     </div>
 
-     <script>
+    <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
 
@@ -436,23 +449,20 @@
         // دالة النقر للحصول على النقاط واستهلاك الطاقة
         function clickToEarn() {
             if (userEnergy <= 0) {
-                // إظهار تنبيه إذا كانت الطاقة صفر
                 if (window.Telegram && window.Telegram.WebApp) {
-                    window.Telegram.WebApp.showAlert("⚠️ طاقتك نفدت! عُد إلى البوت واضغط على زر 'تعبئة الطاقة' لمشاهدة الإعلان.");
+                    window.Telegram.WebApp.showAlert("⚠️ طاقتك نفدت! اضغط على رابط الإعلان لشحن الطاقة.");
                 } else {
-                    alert("⚠️ طاقتك نفدت! عُد إلى البوت وشاهد إعلاناً لتعبئة الطاقة.");
+                    alert("⚠️ طاقتك نفدت!");
                 }
                 return;
             }
             
-            // التأثير البصري للزر
             const btn = document.getElementById('energyClicker');
             if(!btn.classList.contains('disabled')) {
                 btn.style.transform = 'scale(0.9)';
                 setTimeout(() => btn.style.transform = 'scale(1)', 100);
             }
             
-            // خصم 1 طاقة وإضافة 1 نقطة
             updateEnergy(-1);
             updatePoints(1);
         }
@@ -466,7 +476,7 @@
         }
 
         const TELEGRAM_CHANNEL_URL = "https://t.me/Syclickchannel";
-        const BOT_USERNAME = "SyclickBot"; // تأكدي من وضع يوزر بوتك الحقيقي هنا
+        const BOT_USERNAME = "SyclickBot";
 
         function doTelegramTask() {
             if (window.Telegram && window.Telegram.WebApp) {
@@ -494,7 +504,7 @@
             }
         }
 
-        /* ================= 1. لعبة الذاكرة (كشف الكروت) ================= */
+        /* ================= 1. لعبة الذاكرة ================= */
         const symbols = ['⭐', '💎', '🚀', '🔥', '⭐', '💎', '🚀', '🔥'];
         let flipped = [], matchedCount = 0;
         let memoryRoundStarted = false;
@@ -514,7 +524,7 @@
                 card.onclick = () => {
                     if (!memoryRoundStarted) {
                         if (userEnergy < 50) {
-                            alert("⚠️ طاقتك لا تكفي (تحتاج 50)! عُد للبوت وشاهد إعلاناً لتعبئة الطاقة.");
+                            alert("⚠️ طاقتك لا تكفي (تحتاج 50)! زر قسم المهام لشحن طاقتك.");
                             return;
                         }
                         updateEnergy(-50);
@@ -552,13 +562,13 @@
         }
         initMemory();
 
-        /* ================= 2. لعبة إكس أو الذكية (XO) ================= */
+        /* ================= 2. لعبة إكس أو ================= */
         let boardXO = ['','','','','','','','',''];
         let isGameActiveXO = false;
 
         function startXO() {
             if (userEnergy < 50) {
-                alert("⚠️ طاقتك لا تكفي (تحتاج 50)! عُد للبوت وشاهد إعلاناً لتعبئة الطاقة.");
+                alert("⚠️ طاقتك لا تكفي (تحتاج 50)! زر قسم المهام لشحن طاقتك.");
                 return;
             }
             updateEnergy(-50);
@@ -674,7 +684,7 @@
 
         function startFallingDiamonds() {
             if (userEnergy < 50) {
-                alert("⚠️ طاقتك لا تكفي (تحتاج 50)! عُد للبوت وشاهد إعلاناً لتعبئة الطاقة.");
+                alert("⚠️ طاقتك لا تكفي (تحتاج 50)! زر قسم المهام لشحن طاقتك.");
                 return;
             }
             updateEnergy(-50);
@@ -759,7 +769,7 @@
                 updatePoints(dfScore);
                 alert(`🎉 انتهى الوقت! لقد جمعت ${dfScore} نقطة! تمت إضافتها لرصيدك.`);
             } else {
-                alert(`⏱️ انتهى الوقت! للأسف لم تجمع أي نقاط، حظاً أوفر في المرة القادمة.`);
+                alert(`⏱️ انتهى الوقت! للأسف لم تجمع أي نقاط.`);
             }
             document.querySelectorAll('.df-item').forEach(e => e.remove());
         }
@@ -768,7 +778,7 @@
         let currentRotation = 0;
         function spinWheel() {
             if (userEnergy < 70) {
-                alert("⚠️ طاقتك لا تكفي (تحتاج 70)! عُد للبوت وشاهد إعلاناً لتعبئة الطاقة.");
+                alert("⚠️ طاقتك لا تكفي (تحتاج 70)! شحن طاقتك أولاً.");
                 return;
             }
 
