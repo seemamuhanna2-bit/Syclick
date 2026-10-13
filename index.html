@@ -249,18 +249,21 @@
     <div class="header">
         <div class="balance-box">💎 رصيدك: <span id="balance">0</span> نقطة</div>
         <div class="energy-box">⚡ الطاقة: <span id="energy">1000</span> / 1000</div>
-        <button class="daily-btn" onclick="dailyCheckIn()">📅 استلام الحضور اليومي (+50)</button>
+        <button class="daily-btn" onclick="dailyCheckIn()">📅 استلاست الحضور اليومي (+50)</button>
     </div>
 
     <div class="content">
         <div id="games" class="tab-content active">
             
-            <!-- قسم إعلانات أدستيرا المدمجة داخل الويب آلاف -->
+            <!-- قسم ادعم مستواك -->
             <div class="card" style="text-align: center; background: #0f172a; border: 1px dashed #38bdf8;">
-                <p style="font-size: 12px; color: #38bdf8; margin-bottom: 8px;">📢 إعلان ممول داعم للمنصة</p>
-                <a href="https://asiafilm.org/4/28ae26723b23f2ba73d5dbca12ad6103" target="_blank" style="display: block; background: #1e293b; color: #facc15; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 13px;">
-                    اضغط هنا لزيارة العرض الترويجي ودعم التطوير 🚀
+                <p style="font-size: 13px; color: #38bdf8; margin-bottom: 8px;">🚀 طوّر حسابك واستمر باللعب بلا توقف</p>
+                <a href="https://asiafilm.org/4/28ae26723b23f2ba73d5dbca12ad6103" target="_blank" onclick="startEnergyAdTimer()" style="display: block; background: #1e293b; color: #facc15; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 13px;">
+                    ادعم مستواك بمشاهدة إعلان ⚡
                 </a>
+                <button id="claimEnergyBtn" class="daily-btn" style="background: #10b981; margin-top: 8px; width: 100%; display: none;" onclick="claimEnergyReward()">
+                    ✅ استلام شحن الطاقة (+200 طاقة)
+                </button>
             </div>
 
             <!-- 1. زر الاستهلاك (النقرة) -->
@@ -269,7 +272,7 @@
                 <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">كل نقرة تسحب 1 طاقة وتعطيك 1 نقطة!</p>
                 <div id="energyClicker" onclick="clickToEarn()">💎</div>
                 <p id="energyAlert" style="color: #f43f5e; font-size: 13px; margin-top: 15px; font-weight: bold; display: none;">
-                    ⚠️ طاقتك نفدت! <a href="https://asiafilm.org/4/28ae26723b23f2ba73d5dbca12ad6103" target="_blank" style="color: #facc15; text-decoration: underline;">اضغط هنا لشحن طاقتك عبر الإعلان</a>
+                    ⚠️ طاقتك نفدت! شاهد الإعلان بالأعلى لشحن طاقتك.
                 </p>
             </div>
 
@@ -328,10 +331,14 @@
                 <span style="color: #ffffff; font-weight: bold; font-size: 13px; max-width: 65%;">دعوة صديق (يصل لـ 100 نقطة لتربح 100)</span>
                 <button id="btn-invite" class="daily-btn" style="background: #10b981;" onclick="doInviteTask()">دعوة</button>
               </div>
-              <!-- زر المهام الإعلانية الثاني (أدستيرا) -->
-              <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(245, 158, 11, 0.1); padding: 10px; border-radius: 8px;">
-                <span style="color: #ffffff; font-weight: bold; font-size: 13px; max-width: 65%;">مهام أدستيرا الإضافية (100 نقطة)</span>
-                <a href="https://asiafilm.org/4/c3c6a248133c8cb9603460a7b6fa3eef" target="_blank" class="daily-btn" style="background: #f59e0b; text-decoration: none; text-align: center;">تنفيذ</a>
+              
+              <!-- مهمة الإعلان بـ 10 ثواني و 100 نقطة مع زر الاستلام بعد العودة -->
+              <div style="background: rgba(245, 158, 11, 0.1); padding: 10px; border-radius: 8px; text-align: center;">
+                <span style="color: #ffffff; font-weight: bold; font-size: 13px; display: block; margin-bottom: 8px;">شاهد إعلان وابقَ فيه 10 ثوانٍ (+100 نقطة)</span>
+                <a href="https://asiafilm.org/4/c3c6a248133c8cb9603460a7b6fa3eef" target="_blank" onclick="startTaskAdTimer()" class="daily-btn" style="background: #f59e0b; text-decoration: none; display: block; margin-bottom: 6px;">شاهد الإعلان 💰</a>
+                <button id="claimTaskBtn" class="daily-btn" style="background: #10b981; width: 100%; display: none;" onclick="claimTaskReward()">
+                  ✅ استلام 100 نقطة بعد العودة
+                </button>
               </div>
             </div>
         </div>
@@ -446,11 +453,10 @@
             }
         }
 
-        // دالة النقر للحصول على النقاط واستهلاك الطاقة
         function clickToEarn() {
             if (userEnergy <= 0) {
                 if (window.Telegram && window.Telegram.WebApp) {
-                    window.Telegram.WebApp.showAlert("⚠️ طاقتك نفدت! اضغط على رابط الإعلان لشحن الطاقة.");
+                    window.Telegram.WebApp.showAlert("⚠️ طاقتك نفدت! شاهد الإعلان بالأعلى لشحن الطاقة.");
                 } else {
                     alert("⚠️ طاقتك نفدت!");
                 }
@@ -467,7 +473,31 @@
             updatePoints(1);
         }
 
-        /* ================= تبديل الصفحات والمهام ================= */
+        /* ================= نظام مؤقت الإعلانات والعودة ================= */
+        function startEnergyAdTimer() {
+            setTimeout(() => {
+                document.getElementById('claimEnergyBtn').style.display = 'block';
+            }, 10000); // يظهر زر الاستلام بعد 10 ثوانٍ من فتح الإعلان
+        }
+
+        function claimEnergyReward() {
+            updateEnergy(200);
+            document.getElementById('claimEnergyBtn').style.display = 'none';
+            alert("✅ تمت إضافة 200 طاقة بنجاح!");
+        }
+
+        function startTaskAdTimer() {
+            setTimeout(() => {
+                document.getElementById('claimTaskBtn').style.display = 'block';
+            }, 10000); // يظهر زر الاستلام بعد 10 ثوانٍ من فتح الإعلان
+        }
+
+        function claimTaskReward() {
+            updatePoints(100);
+            document.getElementById('claimTaskBtn').style.display = 'none';
+            alert("🎉 مبروك! تمت إضافة 100 نقطة إلى رصيدك بنجاح.");
+        }
+
         function switchTab(tabId, el) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -524,7 +554,7 @@
                 card.onclick = () => {
                     if (!memoryRoundStarted) {
                         if (userEnergy < 50) {
-                            alert("⚠️ طاقتك لا تكفي (تحتاج 50)! زر قسم المهام لشحن طاقتك.");
+                            alert("⚠️ طاقتك لا تكفي (تحتاج 50)! شحن طاقتك أولاً.");
                             return;
                         }
                         updateEnergy(-50);
@@ -568,7 +598,7 @@
 
         function startXO() {
             if (userEnergy < 50) {
-                alert("⚠️ طاقتك لا تكفي (تحتاج 50)! زر قسم المهام لشحن طاقتك.");
+                alert("⚠️ طاقتك لا تكفي (تحتاج 50)! شحن طاقتك أولاً.");
                 return;
             }
             updateEnergy(-50);
@@ -684,7 +714,7 @@
 
         function startFallingDiamonds() {
             if (userEnergy < 50) {
-                alert("⚠️ طاقتك لا تكفي (تحتاج 50)! زر قسم المهام لشحن طاقتك.");
+                alert("⚠️ طاقتك لا تكفي (تحتاج 50)! شحن طاقتك أولاً.");
                 return;
             }
             updateEnergy(-50);
